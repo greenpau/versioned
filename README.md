@@ -14,6 +14,8 @@ First, install `versioned`:
 go get -u github.com/greenpau/versioned/cmd/versioned
 ```
 
+### Basic Usage
+
 Browse to a repository and initialize `VERSION` file with `versioned`:
 
 ```bash
@@ -51,6 +53,8 @@ Update major version in `VERSION` file:
 ```bash
 versioned -major
 ```
+
+### Makefile Usage
 
 Another way of using `versioned` is adding the following
 `release` step in a `Makefile`:
