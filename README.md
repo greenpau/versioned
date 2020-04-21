@@ -58,7 +58,7 @@ release:
         @echo "Making release"
         @if [ $(GIT_BRANCH) != "master" ]; then echo "cannot release to non-master branch $(GIT_BRANCH)" && false; fi
         @git diff-index --quiet HEAD -- || ( echo "git directory is dirty, commit changes first" && false )
-        @bin/versioned -patch
+        @versioned -patch
         @echo "Patched version"
         @git add VERSION
         @git commit -m "released v`cat VERSION | head -1`"
