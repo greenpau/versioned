@@ -18,12 +18,13 @@ func TestVersionedCalculus(t *testing.T) {
 	testFailed := 0
 
 	for i, test := range []struct {
-		input      string
-		output     string
-		actions    []action
-		shouldFail bool // Whether test should result in a failure
-		shouldErr  bool // Whether parsing of a response should result in error
-		errMessage string
+		description string
+		input       string
+		output      string
+		actions     []action
+		shouldFail  bool // Whether test should result in a failure
+		shouldErr   bool // Whether parsing of a response should result in error
+		errMessage  string
 	}{
 		{
 			input:  "1.0.0",
@@ -78,6 +79,34 @@ func TestVersionedCalculus(t *testing.T) {
 				},
 				action{
 					operation:   "increment_patch",
+					incrementBy: 1,
+				},
+			},
+			shouldFail: false,
+			shouldErr:  false,
+			errMessage: "",
+		},
+		{
+			description: "When minor version increments, patch should reset to zero",
+			input:       "1.0.1",
+			output:      "1.1.0",
+			actions: []action{
+				action{
+					operation:   "increment_minor",
+					incrementBy: 1,
+				},
+			},
+			shouldFail: false,
+			shouldErr:  false,
+			errMessage: "",
+		},
+		{
+			description: "when major version increments, both minor and patch should reset to zero",
+			input:       "1.1.1",
+			output:      "2.0.0",
+			actions: []action{
+				action{
+					operation:   "increment_major",
 					incrementBy: 1,
 				},
 			},

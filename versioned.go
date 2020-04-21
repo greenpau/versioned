@@ -63,11 +63,14 @@ func (v *Version) Bytes() []byte {
 // IncrementMajor increments major version
 func (v *Version) IncrementMajor(i uint64) {
 	v.Major++
+	v.Minor = 0
+	v.Patch = 0
 }
 
 // IncrementMinor increments minor version
 func (v *Version) IncrementMinor(i uint64) {
 	v.Minor++
+	v.Patch = 0
 }
 
 // IncrementPatch increments patch version
