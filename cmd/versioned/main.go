@@ -13,7 +13,7 @@ var (
 	appName        = "versioned"
 	appDescription = "Quickly increment major/manor/patch in VERSION file"
 	appDocPath     = "https://github.com/greenpau/versioned/"
-	appVersion     = "[untracked]"
+	appVersion     = "1.0.13"
 	gitBranch      string
 	gitCommit      string
 	buildUser      string // whoami
@@ -26,10 +26,12 @@ func main() {
 	var isIncrementMajor bool
 	var isIncrementMinor bool
 	var isIncrementPatch bool
+	var isInitialize bool
 	var isSilent bool
 	var factor uint64
 
 	flag.StringVar(&versionFile, "file", "VERSION", "The file with version info")
+	flag.BoolVar(&isInitialize, "init", false, "initialize a new version file")
 	flag.BoolVar(&isIncrementMajor, "major", false, "increment major version")
 	flag.BoolVar(&isIncrementMinor, "minor", false, "increment minor version")
 	flag.BoolVar(&isIncrementPatch, "patch", false, "increment patch version")
@@ -58,6 +60,20 @@ func main() {
 		os.Exit(0)
 	}
 
+	if isInitialize {
+		if version, err := versioned.NewVersionFromFile(versionFile); err == nil {
+			fmt.Fprintf(os.Stderr, "version file already exists, version: %s\n", version)
+			os.Exit(0)
+		}
+		version, _ := versioned.NewVersion("1.0.0")
+		version.FileName = versionFile
+		if err := version.UpdateFile(); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to initialize new version file: %s\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
 	version, err := versioned.NewVersionFromFile(versionFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
@@ -74,7 +90,7 @@ func main() {
 	if isIncrementMajor {
 		version.IncrementMajor(factor)
 		if !isSilent {
-			fmt.Fprintf(os.Stderr, "increased patch version by %d, current version: %s\n",
+			fmt.Fprintf(os.Stderr, "increased major version by %d, current version: %s\n",
 				factor, version,
 			)
 		}

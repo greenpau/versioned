@@ -4,16 +4,36 @@ Quickly increment major/minor/patch version in VERSION file.
 
 ## Getting Started
 
-Display current version:
+First, install `versioned`:
+
+```bash
+go get -u github.com/greenpau/versioned/cmd/versioned
+```
+
+Browse to a repository and initialize `VERSION` file with `versioned`:
+
+```bash
+versioned -init
+```
+
+Display current version of the repo:
 
 ```bash
 versioned
 ```
 
-Update minor version in `VERSION` file:
+Update patch version in `VERSION` file:
 
 ```bash
-versioned -major
+$ versioned -patch
+increased patch version by 1, current version: 1.0.1
+updated version: 1.0.1, previous version: 1.0.0
+```
+
+Do the same operation silently:
+
+```bash
+versioned -patch -silent
 ```
 
 Update minor version in `VERSION` file:
@@ -22,15 +42,27 @@ Update minor version in `VERSION` file:
 versioned -minor
 ```
 
-Update patch version in `VERSION` file:
+Update major version in `VERSION` file:
 
 ```bash
-versioned -patch
+versioned -major
 ```
 
-Add the following `release` step in a `Makefile`:
+Another way of using `versioned` is adding the following
+`release` step in a `Makefile`:
 
 ```
+GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD -- | head -1)
 
-
+release:
+        @echo "Making release"
+        @if [ $(GIT_BRANCH) != "master" ]; then echo "cannot release to non-master branch $(GIT_BRANCH)" && false; fi
+        @git diff-index --quiet HEAD -- || ( echo "git directory is dirty, commit changes first" && false )
+        @bin/versioned -patch
+        @echo "Patched version"
+        @git add VERSION
+        @git commit -m "released v`cat VERSION | head -1`"
+        @git tag -a v`cat VERSION | head -1` -m "v`cat VERSION | head -1`"
+        @git push
+        @git push --tags
 ```
