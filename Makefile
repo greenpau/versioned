@@ -16,7 +16,6 @@ all:
 	@mkdir -p bin/
 	@CGO_ENABLED=0 go build -o bin/$(BINARY) $(VERBOSE) \
 		-ldflags="-w -s \
-		-X main.appName=$(BINARY) \
 		-X main.appVersion=$(APP_VERSION) \
 		-X main.gitBranch=$(GIT_BRANCH) \
 		-X main.gitCommit=$(GIT_COMMIT) \

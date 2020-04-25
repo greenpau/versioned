@@ -10,15 +10,26 @@ import (
 )
 
 var (
-	appName        = "versioned"
-	appDescription = "Quickly increment major/manor/patch in VERSION file"
-	appDocPath     = "https://github.com/greenpau/versioned/"
-	appVersion     = "1.0.14"
-	gitBranch      string
-	gitCommit      string
-	buildUser      string // whoami
-	buildDate      string // date -u
+	app        *versioned.Package
+	appVersion string
+	gitBranch  string
+	gitCommit  string
+	buildUser  string
+	buildDate  string
 )
+
+func init() {
+	app = &versioned.Package{
+		Name:          "versioned",
+		Description:   "Quickly increment major/manor/patch in VERSION file",
+		Documentation: "https://github.com/greenpau/versioned/",
+	}
+	app.SetVersion(appVersion, "")
+	app.SetGitBranch(gitBranch, "")
+	app.SetGitCommit(gitCommit, "")
+	app.SetBuildUser(buildUser, "")
+	app.SetBuildDate(buildDate, "")
+}
 
 func main() {
 	var versionFile string
@@ -39,24 +50,14 @@ func main() {
 	flag.BoolVar(&isSilent, "silent", false, "silent execution")
 	flag.BoolVar(&isShowVersion, "version", false, "version information")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "\n%s - %s\n\n", appName, appDescription)
-		fmt.Fprintf(os.Stderr, "Usage: %s [arguments]\n\n", appName)
+		fmt.Fprintf(os.Stderr, "\n%s - %s\n\n", app.Name, app.Description)
+		fmt.Fprintf(os.Stderr, "Usage: %s [arguments]\n\n", app.Name)
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nDocumentation: %s\n\n", appDocPath)
+		fmt.Fprintf(os.Stderr, "\nDocumentation: %s\n\n", app.Documentation)
 	}
 	flag.Parse()
 	if isShowVersion {
-		fmt.Fprintf(os.Stdout, "%s %s", appName, appVersion)
-		if gitBranch != "" {
-			fmt.Fprintf(os.Stdout, ", branch: %s", gitBranch)
-		}
-		if gitCommit != "" {
-			fmt.Fprintf(os.Stdout, ", commit: %s", gitCommit)
-		}
-		if buildUser != "" && buildDate != "" {
-			fmt.Fprintf(os.Stdout, ", build on %s by %s", buildDate, buildUser)
-		}
-		fmt.Fprint(os.Stdout, "\n")
+		fmt.Fprintf(os.Stdout, "%s\n", app.Banner())
 		os.Exit(0)
 	}
 

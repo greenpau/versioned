@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -255,4 +256,37 @@ func TestVersionedFileOperations(t *testing.T) {
 		t.Fatalf("Failed %d tests", testFailed)
 	}
 
+}
+
+func TestAppPackage(t *testing.T) {
+	app := &Package{
+		Name:          "versioned",
+		Description:   "Quickly increment major/manor/patch in VERSION file",
+		Documentation: "https://github.com/greenpau/versioned/",
+	}
+	app.SetVersion("", "1.0.1")
+	app.SetGitBranch("", "master")
+	app.SetGitCommit("", "v1.0.1-g0c85fbc")
+	app.SetBuildUser("", "greenpau")
+	app.SetBuildDate("", "2020-04-25")
+
+	app.SetVersion("1.0.1", "")
+	app.SetGitBranch("master", "")
+	app.SetGitCommit("v1.0.1-g0c85fbc", "")
+	app.SetBuildUser("greenpau", "")
+	app.SetBuildDate("2020-04-25", "")
+
+	vers := app.Banner()
+	vers = strings.Split(vers, "(")[0]
+	expVers := "versioned 1.0.1, branch: master, commit: v1.0.1-g0c85fbc, build on 2020-04-25 by greenpau "
+	if vers != expVers {
+		t.Fatalf("FAIL: Version mismatch: %s (expected) vs. %s (received)", expVers, vers)
+	}
+	vers = app.ShortBanner()
+	expVers = "versioned 1.0.1"
+
+	if vers != expVers {
+		t.Fatalf("FAIL: Version mismatch: %s (expected) vs. %s (received)", expVers, vers)
+	}
+	t.Logf("%s", app)
 }
