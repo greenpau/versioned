@@ -6,10 +6,10 @@
 
 Simplified package metadata management for Go packages.
 
-* Manage package metadata as part of your code
-* Quickly increment major.minor.patch versions in `VERSION` file
-* Keep version in `VERSION` file in sync with package version metadata
-* Pass version, git branch/commit, build date/user metadata via `ldflags`
+* [Manage package metadata as part of your code](#package-metadata)
+* [Quickly increment major.minor.patch versions in `VERSION` file](#increment-majorminorpatch-versions)
+* [Keep version in `VERSION` file in sync with package version metadata](#package-metadata)
+* [Pass version, git branch/commit, build date/user metadata via `ldflags`](#package-metadata)
 
 This repository contains:
 
