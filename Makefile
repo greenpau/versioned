@@ -16,7 +16,6 @@ all:
 	@mkdir -p bin/
 	@CGO_ENABLED=0 go build -o bin/$(BINARY) $(VERBOSE) \
 		-ldflags="-w -s \
-		-X main.appVersion=$(APP_VERSION) \
 		-X main.gitBranch=$(GIT_BRANCH) \
 		-X main.gitCommit=$(GIT_COMMIT) \
 		-X main.buildUser=$(BUILD_USER) \
@@ -24,6 +23,7 @@ all:
 		-gcflags="all=-trimpath=$(GOPATH)/src" \
 		-asmflags="all=-trimpath $(GOPATH)/src" cmd/$(BINARY)/*.go
 	@chmod +x bin/$(BINARY)
+	@./bin/$(BINARY) --version
 	@echo "Done!"
 
 linter:
@@ -78,5 +78,6 @@ release:
 	@git tag -a v`cat VERSION | head -1` -m "v`cat VERSION | head -1`"
 	@git push
 	@git push --tags
+	@#./bin/versioned -sync cmd/versioned/main.go
 	@#git push --delete origin v1.0.12
 	@#git tag --delete v1.0.12
