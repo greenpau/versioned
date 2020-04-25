@@ -88,8 +88,8 @@ release:
 
 ## Package Metadata
 
-For demonstration, please consider that you have the following code as
-part of your `main.go`:
+For demonstration, please consider that a developer manages the following
+code as part of `main.go`:
 
 ```golang
 package main
@@ -111,21 +111,21 @@ var (
 )
 
 func init() {
-        app = &versioned.Package{
-                Name:          "versioned",
-                Description:   "Quickly increment major/manor/patch in VERSION file",
-                Documentation: "https://github.com/greenpau/versioned/",
-        }
-        app.SetVersion(appVersion, "1.0.0")
-        app.SetGitBranch(gitBranch, "master")
-        app.SetGitCommit(gitCommit, "v1.0.0-dirty")
-        app.SetBuildUser(buildUser, "")
-        app.SetBuildDate(buildDate, "")
+    app = versioned.NewPackageManager("myapp")
+    app.Description = "MyApp"
+    app.Documentation = "https://github.com/me/myapp"
+
+    app.SetVersion(appVersion, "1.0.0")
+    app.SetGitBranch(gitBranch, "master")
+    app.SetGitCommit(gitCommit, "v1.0.0-dirty")
+    app.SetBuildUser(buildUser, "")
+    app.SetBuildDate(buildDate, "")
 }
 ```
 
-In the `init()` function, you can set your default application name,
-description, and documentation. These do not change at runtime.
+In the `init()` function, the developer initializer `versioned` package
+manager and sets default application name, description, and documentation.
+These do not change at runtime.
 
 Next, notice the `var` section, where there are a number of `string`
 variable. At runtime, the values of the variables are not initialized.
@@ -169,14 +169,16 @@ The end result os that the following variables are being set with values.
 
 However, what happen when a user does not use `-ldflags`.
 
-In that case, `versioned` sets a number of defaults:
+In that case, `versioned` sets a number of defaults. For example,
+if `appVersion` is not being wtih `-ldflags`, then the default
+`1.0.0` will be set.
 
 ```golang
-        app.SetVersion(appVersion, "1.0.0")
-        app.SetGitBranch(gitBranch, "master")
-        app.SetGitCommit(gitCommit, "v1.0.0-dirty")
-        app.SetBuildUser(buildUser, "")
-        app.SetBuildDate(buildDate, "")
+    app.SetVersion(appVersion, "1.0.0")
+    app.SetGitBranch(gitBranch, "master")
+    app.SetGitCommit(gitCommit, "v1.0.0-dirty")
+    app.SetBuildUser(buildUser, "")
+    app.SetBuildDate(buildDate, "")
 ```
 
 A developer, prior to releasing code, would put proper defaults.

@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	app        *versioned.Package
+	app        *versioned.PackageManager
 	appVersion string
 	gitBranch  string
 	gitCommit  string
@@ -19,11 +19,9 @@ var (
 )
 
 func init() {
-	app = &versioned.Package{
-		Name:          "versioned",
-		Description:   "Quickly increment major/manor/patch in VERSION file",
-		Documentation: "https://github.com/greenpau/versioned/",
-	}
+	app = versioned.NewPackageManager("versioned")
+	app.Description = "Simplified package metadata management for Go packages."
+	app.Documentation = "https://github.com/greenpau/versioned/"
 	app.SetVersion(appVersion, "")
 	app.SetGitBranch(gitBranch, "")
 	app.SetGitCommit(gitCommit, "")

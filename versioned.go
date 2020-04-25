@@ -13,14 +13,21 @@ import (
 	"strings"
 )
 
-// Package stores metadata about a package.
-type Package struct {
+// PackageManager stores metadata about a package.
+type PackageManager struct {
 	Name          string
 	Version       string
 	Description   string
 	Documentation string
 	Git           gitMetadata
 	Build         buildMetadata
+}
+
+// NewPackageManager return an instance of PackageManager.
+func NewPackageManager(s string) *PackageManager {
+	return &PackageManager{
+		Name: s,
+	}
 }
 
 // gitMetadata stores Git-related metadata.
@@ -38,7 +45,7 @@ type buildMetadata struct {
 }
 
 // Banner returns package
-func (p *Package) Banner() string {
+func (p *PackageManager) Banner() string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("%s %s", p.Name, p.Version))
 	if p.Git.Branch != "" {
@@ -68,14 +75,14 @@ func (p *Package) Banner() string {
 }
 
 // ShortBanner returns one-line information about a package.
-func (p *Package) ShortBanner() string {
+func (p *PackageManager) ShortBanner() string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("%s %s", p.Name, p.Version))
 	return sb.String()
 }
 
-// SetVersion sets Version attribute of Package.
-func (p *Package) SetVersion(v, d string) {
+// SetVersion sets Version attribute of PackageManager.
+func (p *PackageManager) SetVersion(v, d string) {
 	if v != "" {
 		p.Version = v
 		return
@@ -83,8 +90,8 @@ func (p *Package) SetVersion(v, d string) {
 	p.Version = d
 }
 
-// SetGitBranch sets Git.Branch attribute of Package.
-func (p *Package) SetGitBranch(v, d string) {
+// SetGitBranch sets Git.Branch attribute of PackageManager.
+func (p *PackageManager) SetGitBranch(v, d string) {
 	if v != "" {
 		p.Git.Branch = v
 		return
@@ -92,8 +99,8 @@ func (p *Package) SetGitBranch(v, d string) {
 	p.Git.Branch = d
 }
 
-// SetGitCommit sets Git.Commit attribute of Package.
-func (p *Package) SetGitCommit(v, d string) {
+// SetGitCommit sets Git.Commit attribute of PackageManager.
+func (p *PackageManager) SetGitCommit(v, d string) {
 	if v != "" {
 		p.Git.Commit = v
 		return
@@ -101,8 +108,8 @@ func (p *Package) SetGitCommit(v, d string) {
 	p.Git.Commit = d
 }
 
-// SetBuildUser sets Build.User attribute of Package.
-func (p *Package) SetBuildUser(v, d string) {
+// SetBuildUser sets Build.User attribute of PackageManager.
+func (p *PackageManager) SetBuildUser(v, d string) {
 	if v != "" {
 		p.Build.User = v
 		return
@@ -110,8 +117,8 @@ func (p *Package) SetBuildUser(v, d string) {
 	p.Build.User = d
 }
 
-// SetBuildDate sets Build.Date attribute of Package.
-func (p *Package) SetBuildDate(v, d string) {
+// SetBuildDate sets Build.Date attribute of PackageManager.
+func (p *PackageManager) SetBuildDate(v, d string) {
 	if v != "" {
 		p.Build.Date = v
 		return
@@ -119,7 +126,7 @@ func (p *Package) SetBuildDate(v, d string) {
 	p.Build.Date = d
 }
 
-func (p *Package) String() string {
+func (p *PackageManager) String() string {
 	return p.Banner()
 }
 

@@ -216,12 +216,15 @@ func TestVersionedFileOperations(t *testing.T) {
 		}
 	}
 
-	testInputFileNames := []string{"VERSION", "PROP_VERSION"}
+	testInputFileNames := []string{"VERSION", "PROP_VERSION", "BAD_VERSION"}
 	versionStr := "1.2.3"
 	versionBytes := []byte(versionStr)
 
 	for _, name := range testInputFileNames {
 		tempFileName := filepath.Join(tempDirName, name)
+		if name == "BAD_VERSION" {
+			versionBytes = []byte("xxxx")
+		}
 		if err := ioutil.WriteFile(tempFileName, versionBytes, 0666); err != nil {
 			t.Fatalf("Error writing to %s: %s", tempFileName, err)
 		}
@@ -231,10 +234,26 @@ func TestVersionedFileOperations(t *testing.T) {
 
 	os.Chdir(tempDirName)
 	for i, name := range testInputFileNames {
+		if _, err := NewVersionFromFile(name + "0123456789"); err == nil {
+			t.Logf("FAIL: Test %d: input: '%s', expected error, got success", i, name)
+			testFailed++
+			continue
+		}
 		version, err := NewVersionFromFile(name)
 		if err != nil {
-			t.Logf("FAIL: Test %d: input: '%s', error: %s", i, name, err)
-			testFailed++
+			if name != "BAD_VERSION" {
+				t.Logf("FAIL: Test %d: input: '%s', error: %s", i, name, err)
+				testFailed++
+				continue
+			}
+		} else {
+			if name == "BAD_VERSION" {
+				t.Logf("FAIL: Test %d: input: '%s', error: %s", i, name, err)
+				testFailed++
+				continue
+			}
+		}
+		if name == "BAD_VERSION" {
 			continue
 		}
 		if version.String() != versionStr {
@@ -259,11 +278,10 @@ func TestVersionedFileOperations(t *testing.T) {
 }
 
 func TestAppPackage(t *testing.T) {
-	app := &Package{
-		Name:          "versioned",
-		Description:   "Quickly increment major/manor/patch in VERSION file",
-		Documentation: "https://github.com/greenpau/versioned/",
-	}
+	app := NewPackageManager("versioned")
+	app.Description = "Simplified package metadata management for Go packages."
+	app.Documentation = "https://github.com/greenpau/versioned/"
+
 	app.SetVersion("", "1.0.1")
 	app.SetGitBranch("", "master")
 	app.SetGitCommit("", "v1.0.1-g0c85fbc")
@@ -288,5 +306,9 @@ func TestAppPackage(t *testing.T) {
 	if vers != expVers {
 		t.Fatalf("FAIL: Version mismatch: %s (expected) vs. %s (received)", expVers, vers)
 	}
+	t.Logf("%s", app)
+
+	app.Build.OperatingSystem = "myos"
+	app.Build.Architecture = "amd64"
 	t.Logf("%s", app)
 }
