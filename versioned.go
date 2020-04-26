@@ -15,12 +15,12 @@ import (
 
 // PackageManager stores metadata about a package.
 type PackageManager struct {
-	Name          string
-	Version       string
-	Description   string
-	Documentation string
-	Git           gitMetadata
-	Build         buildMetadata
+	Name          string        `json:"name" xml:"name"`
+	Version       string        `json:"version" xml:"version"`
+	Description   string        `json:"description" xml:"description"`
+	Documentation string        `json:"documentation" xml:"documentation"`
+	Git           gitMetadata   `json:"git" xml:"git"`
+	Build         buildMetadata `json:"build" xml:"build"`
 }
 
 // NewPackageManager return an instance of PackageManager.
@@ -32,16 +32,16 @@ func NewPackageManager(s string) *PackageManager {
 
 // gitMetadata stores Git-related metadata.
 type gitMetadata struct {
-	Branch string
-	Commit string
+	Branch string `json:"branch" xml:"branch"`
+	Commit string `json:"commit" xml:"commit"`
 }
 
 // buildInfo stores build-related metadata.
 type buildMetadata struct {
-	OperatingSystem string
-	Architecture    string
-	User            string
-	Date            string
+	OperatingSystem string `json:"os" xml:"os"`
+	Architecture    string `json:"arch" xml:"arch"`
+	User            string `json:"user" xml:"user"`
+	Date            string `json:"date" xml:"date"`
 }
 
 // Banner returns package
