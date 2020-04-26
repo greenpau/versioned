@@ -28,9 +28,9 @@ func init() {
 	app = versioned.NewPackageManager("versioned")
 	app.Description = "Simplified package metadata management for Go packages."
 	app.Documentation = "https://github.com/greenpau/versioned/"
-	app.SetVersion(appVersion, "1.0.14")
+	app.SetVersion(appVersion, "1.0.15")
 	app.SetGitBranch(gitBranch, "master")
-	app.SetGitCommit(gitCommit, "v1.0.14-3-ga22e23d")
+	app.SetGitCommit(gitCommit, "v1.0.15")
 	app.SetBuildUser(buildUser, "")
 	app.SetBuildDate(buildDate, "")
 }
@@ -140,15 +140,11 @@ func main() {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(1)
 		}
-		fmt.Fprintf(os.Stderr, "%s\n", commit)
-
 		branch, err := executeShell([]string{"git", "rev-parse", "--abbrev-ref", "HEAD", "--"})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(1)
 		}
-		fmt.Fprintf(os.Stderr, "%s\n", branch)
-
 		pkg := versioned.NewPackageManager("")
 		pkg.Version = version.String()
 		pkg.Git.Branch = branch
