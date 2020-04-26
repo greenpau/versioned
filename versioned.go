@@ -15,12 +15,12 @@ import (
 
 // PackageManager stores metadata about a package.
 type PackageManager struct {
-	Name          string        `json:"name" xml:"name"`
-	Version       string        `json:"version" xml:"version"`
-	Description   string        `json:"description" xml:"description"`
-	Documentation string        `json:"documentation" xml:"documentation"`
-	Git           gitMetadata   `json:"git" xml:"git"`
-	Build         buildMetadata `json:"build" xml:"build"`
+	Name          string        `json:"name" xml:"name" yaml:"name"`
+	Version       string        `json:"version" xml:"version" yaml:"version"`
+	Description   string        `json:"description" xml:"description" yaml:"description"`
+	Documentation string        `json:"documentation" xml:"documentation" yaml:"documentation"`
+	Git           gitMetadata   `json:"git" xml:"git" yaml:"git"`
+	Build         buildMetadata `json:"build" xml:"build" yaml:"build"`
 }
 
 // NewPackageManager return an instance of PackageManager.
@@ -32,16 +32,16 @@ func NewPackageManager(s string) *PackageManager {
 
 // gitMetadata stores Git-related metadata.
 type gitMetadata struct {
-	Branch string `json:"branch" xml:"branch"`
-	Commit string `json:"commit" xml:"commit"`
+	Branch string `json:"branch" xml:"branch" yaml:"branch"`
+	Commit string `json:"commit" xml:"commit" yaml:"commit"`
 }
 
 // buildInfo stores build-related metadata.
 type buildMetadata struct {
-	OperatingSystem string `json:"os" xml:"os"`
-	Architecture    string `json:"arch" xml:"arch"`
-	User            string `json:"user" xml:"user"`
-	Date            string `json:"date" xml:"date"`
+	OperatingSystem string `json:"os" xml:"os" yaml:"os"`
+	Architecture    string `json:"arch" xml:"arch" yaml:"arch"`
+	User            string `json:"user" xml:"user" yaml:"user"`
+	Date            string `json:"date" xml:"date" yaml:"date"`
 }
 
 // Banner returns package
