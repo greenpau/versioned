@@ -102,7 +102,7 @@ import (
 )
 
 var (
-        app        *versioned.Package
+        app        *versioned.PackageManager
         appVersion string
         gitBranch  string
         gitCommit  string
@@ -114,7 +114,6 @@ func init() {
     app = versioned.NewPackageManager("myapp")
     app.Description = "MyApp"
     app.Documentation = "https://github.com/me/myapp"
-
     app.SetVersion(appVersion, "1.0.0")
     app.SetGitBranch(gitBranch, "master")
     app.SetGitCommit(gitCommit, "v1.0.0-dirty")
