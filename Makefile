@@ -71,13 +71,16 @@ release:
 	@echo "Making release"
 	@if [ $(GIT_BRANCH) != "master" ]; then echo "cannot release to non-master branch $(GIT_BRANCH)" && false; fi
 	@git diff-index --quiet HEAD -- || ( echo "git directory is dirty, commit changes first" && false )
-	@./bin/versioned -patch
-	@./bin/versioned -sync cmd/versioned/main.go
+	@./bin/$(BINARY) -patch
+	@git add VERSION
+	@git commit -m 'updated VERSION file'
+	@./bin/$(BINARY) -sync cmd/$(BINARY)/main.go
 	@echo "Patched version"
-	@git add VERSION cmd/versioned/main.go
+	@git add cmd/$(BINARY)/main.go
 	@git commit -m "released v`cat VERSION | head -1`"
 	@git tag -a v`cat VERSION | head -1` -m "v`cat VERSION | head -1`"
 	@git push
-	@git push --delete origin v$(APP_VERSION)
-	@git tag --delete v$(APP_VERSION)
 	@git push --tags
+	@echo "If necessary, run the following commands:"
+	@echo "  git push --delete origin v$(APP_VERSION)"
+	@echo "  git tag --delete v$(APP_VERSION)"

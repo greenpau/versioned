@@ -71,6 +71,7 @@ Another way of using `versioned` is adding the following
 `release` step in a `Makefile`:
 
 ```
+APP_NAME="myapp"
 GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD -- | head -1)
 
 release:
@@ -78,12 +79,18 @@ release:
         @if [ $(GIT_BRANCH) != "master" ]; then echo "cannot release to non-master branch $(GIT_BRANCH)" && false; fi
         @git diff-index --quiet HEAD -- || ( echo "git directory is dirty, commit changes first" && false )
         @versioned -patch
-        @echo "Patched version"
         @git add VERSION
+        @git commit -m 'updated VERSION file'
+        @versioned -sync cmd/$(APP_NAME)/main.go
+        @echo "Patched version"
+        @git add cmd/$(APP_NAME)/main.go
         @git commit -m "released v`cat VERSION | head -1`"
         @git tag -a v`cat VERSION | head -1` -m "v`cat VERSION | head -1`"
         @git push
         @git push --tags
+        @echo "If necessary, run the following commands:"
+        @echo "  git push --delete origin v$(APP_VERSION)"
+        @echo "  git tag --delete v$(APP_VERSION)"
 ```
 
 ## Package Metadata
