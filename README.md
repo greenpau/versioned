@@ -17,6 +17,9 @@ This repository contains:
 * `github.com/greenpau/versioned/cmd/versioned`: Command-line
   package metadata management utility
 
+<!-- begin-markdown-toc -->
+<!-- end-markdown-toc -->
+
 ## Getting Started
 
 First, install `versioned`:
@@ -217,4 +220,16 @@ to explicitly state the way the file should be handled.
 
 ```bash
 versioned -sync app-client --format python
+```
+
+## Markdown Table of Contents
+
+The `versioned` is capable of generating and updating of a Table of Contents
+(TOC) in Markdown `README.md` file.
+
+The following command either generates or updates the Table of Contents in
+`README.md` file:
+
+```bash
+versioned --toc
 ```

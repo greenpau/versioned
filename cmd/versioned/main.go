@@ -48,6 +48,8 @@ func main() {
 	var factor uint64
 	var syncFilePath string
 	var syncFileFormat string
+	var isTocUpdate bool
+	var readmeFile string = "README.md"
 
 	flag.StringVar(&versionedDir, "path", "./", "The path to data repository")
 	flag.StringVar(&versionFile, "file", "VERSION", "The file with version info")
@@ -57,6 +59,7 @@ func main() {
 	flag.BoolVar(&isIncrementMajor, "major", false, "increment major version")
 	flag.BoolVar(&isIncrementMinor, "minor", false, "increment minor version")
 	flag.BoolVar(&isIncrementPatch, "patch", false, "increment patch version")
+	flag.BoolVar(&isTocUpdate, "toc", false, "update table of contents")
 	flag.Uint64Var(&factor, "factor", 1, "increase factor")
 	flag.BoolVar(&isSilent, "silent", false, "silent execution")
 	flag.BoolVar(&isShowVersion, "version", false, "version information")
@@ -94,7 +97,7 @@ func main() {
 
 	oldVersion := *version
 
-	if !isIncrementMajor && !isIncrementMinor && !isIncrementPatch && syncFilePath == "" {
+	if !isIncrementMajor && !isIncrementMinor && !isIncrementPatch && syncFilePath == "" && !isTocUpdate {
 		fmt.Fprintf(os.Stdout, "%s\n", version)
 		os.Exit(0)
 	}
@@ -136,6 +139,22 @@ func main() {
 			fmt.Fprintf(os.Stderr, "updated version: %s, previous version: %s\n",
 				version, &oldVersion,
 			)
+		}
+	}
+
+	if isTocUpdate {
+		fi, err := os.Stat(readmeFile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+			os.Exit(1)
+		}
+		if !fi.Mode().IsRegular() {
+			fmt.Fprintf(os.Stderr, "path %s is not a file\n", readmeFile)
+			os.Exit(1)
+		}
+		if err := updateToc(readmeFile, fi); err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+			os.Exit(1)
 		}
 	}
 
@@ -195,6 +214,93 @@ func main() {
 	}
 
 	os.Exit(0)
+}
+
+func updateToc(fp string, fi os.FileInfo) error {
+	var fileBuffer bytes.Buffer
+	var tocBuffer bytes.Buffer
+	var tocBeginMarker string = "<!-- begin-markdown-toc -->"
+	var tocEndMarker string = "<!-- end-markdown-toc -->"
+	var isTocOutdated bool = true
+	var isTocFound bool
+	var isInsideToc bool
+
+	fh, err := os.Open(fp)
+	if err != nil {
+		return err
+	}
+	defer fh.Close()
+
+	// Initialize ToC
+	toc := versioned.NewTableOfContents()
+
+	// Discovery Scan
+	scanner := bufio.NewScanner(fh)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "<!-- end-markdown-toc -->") {
+			isInsideToc = false
+		}
+		if strings.HasPrefix(line, "<!-- begin-markdown-toc -->") {
+			isInsideToc = true
+			isTocFound = true
+		}
+		if isInsideToc {
+			tocBuffer.WriteString(line + "\n")
+			continue
+		}
+
+		if !isInsideToc && isTocFound {
+			if strings.HasPrefix(line, "##") {
+				if err := toc.AddHeading(line); err != nil {
+					return fmt.Errorf("toc error: %s", err.Error())
+				}
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(os.Stderr, "%s\n", toc.ToString())
+	fmt.Fprintf(os.Stderr, "%s\n", isTocFound)
+	fmt.Fprintf(os.Stderr, "%s\n", isTocOutdated)
+
+	// Found outdated Table of Contents
+	if isTocFound && isTocOutdated {
+		// scanner := bufio.NewScanner(fh)
+		fmt.Fprintf(os.Stderr, "meeee\n")
+		for scanner.Scan() {
+			line := scanner.Text()
+			fmt.Fprintf(os.Stderr, "%s\n", line)
+			if strings.HasPrefix(line, tocEndMarker) {
+				isInsideToc = false
+				continue
+			}
+			if strings.HasPrefix(line, tocBeginMarker) {
+				isInsideToc = true
+				fileBuffer.WriteString(tocBeginMarker + "\n")
+				fileBuffer.WriteString(toc.ToString())
+				fileBuffer.WriteString(tocEndMarker + "\n")
+				continue
+			}
+			if isInsideToc {
+				continue
+			}
+			fileBuffer.WriteString(line + "\n")
+			fmt.Fprintf(os.Stderr, "%s\n", line)
+		}
+		if err := scanner.Err(); err != nil {
+			return err
+		}
+
+		fmt.Fprintf(os.Stderr, "%s\n", fileBuffer.String())
+	}
+
+	fh.Close()
+
+	return nil
 }
 
 func syncNpmFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
