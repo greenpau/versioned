@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -36,6 +37,7 @@ func init() {
 }
 
 func main() {
+	var versionedDir string
 	var versionFile string
 	var isShowVersion bool
 	var isIncrementMajor bool
@@ -44,11 +46,14 @@ func main() {
 	var isInitialize bool
 	var isSilent bool
 	var factor uint64
-	var syncFile string
+	var syncFilePath string
+	var syncFileFormat string
 
+	flag.StringVar(&versionedDir, "path", "./", "The path to data repository")
 	flag.StringVar(&versionFile, "file", "VERSION", "The file with version info")
 	flag.BoolVar(&isInitialize, "init", false, "initialize a new version file")
-	flag.StringVar(&syncFile, "sync", "", "synchronize info from version file to `FILE`")
+	flag.StringVar(&syncFilePath, "sync", "", "synchronize info from version file to `FILE`")
+	flag.StringVar(&syncFileFormat, "format", "", "synchronize according to specific language, i.e. py, js, go, ts, etc.")
 	flag.BoolVar(&isIncrementMajor, "major", false, "increment major version")
 	flag.BoolVar(&isIncrementMinor, "minor", false, "increment minor version")
 	flag.BoolVar(&isIncrementPatch, "patch", false, "increment patch version")
@@ -89,7 +94,7 @@ func main() {
 
 	oldVersion := *version
 
-	if !isIncrementMajor && !isIncrementMinor && !isIncrementPatch && syncFile == "" {
+	if !isIncrementMajor && !isIncrementMinor && !isIncrementPatch && syncFilePath == "" {
 		fmt.Fprintf(os.Stdout, "%s\n", version)
 		os.Exit(0)
 	}
@@ -134,7 +139,17 @@ func main() {
 		}
 	}
 
-	if syncFile != "" {
+	if syncFilePath != "" {
+		fi, err := os.Stat(syncFilePath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+			os.Exit(1)
+		}
+		if !fi.Mode().IsRegular() {
+			fmt.Fprintf(os.Stderr, "path %s is not a file\n", syncFilePath)
+			os.Exit(1)
+		}
+
 		commit, err := executeShell([]string{"git", "describe", "--always"})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
@@ -150,16 +165,101 @@ func main() {
 		pkg.Git.Branch = branch
 		pkg.Git.Commit = commit
 
-		if err := parseFile(pkg, syncFile); err != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
-			os.Exit(1)
+		ext := filepath.Ext(syncFilePath)
+		fileDir, fileName := filepath.Split(syncFilePath)
+		if ext == ".py" || syncFileFormat == "py" || syncFileFormat == "python" {
+			if err := syncPyFile(pkg, syncFilePath, fi); err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
 		}
+		if ext == ".go" {
+			if err := syncGoFile(pkg, syncFilePath, fi); err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
+		}
+
+		if fileName == "package.json" {
+			if err := syncNpmFile(pkg, syncFilePath, fi); err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
+		}
+
+		fmt.Fprintf(os.Stderr, "file %s in %s directory has unsupported file extension %s\n", fileName, fileDir, ext)
+		os.Exit(1)
 	}
 
 	os.Exit(0)
 }
 
-func parseFile(pkg *versioned.PackageManager, fp string) error {
+func syncNpmFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
+	return nil
+}
+
+// syncPyFile inspects a Python file for __version__ module level
+// dunder (see PEP 8) and, if necessary, updates the version to
+// match the one found in VERSION file.
+func syncPyFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
+	var buffer bytes.Buffer
+	fh, err := os.Open(fp)
+	if err != nil {
+		return err
+	}
+	defer fh.Close()
+
+	isVersionDunderExist := false
+	fileVersion := ""
+	versionDunder := "__version__"
+
+	scanner := bufio.NewScanner(fh)
+	for scanner.Scan() {
+		line := scanner.Text()
+		line = line + "\n"
+		if strings.HasPrefix(line, versionDunder) {
+			isVersionDunderExist = true
+			// fmt.Fprintf(os.Stderr, "%s\n", line)
+			v := strings.SplitN(line, "=", 2)[1]
+			v = strings.TrimSpace(v)
+			v = strings.Replace(v, "'", "", -1)
+			v = strings.Replace(v, "\"", "", -1)
+			fileVersion = v
+			if fileVersion != pkg.Version {
+				buffer.WriteString("__version__ = '" + pkg.Version + "'\n")
+			} else {
+				buffer.WriteString(line)
+			}
+			continue
+		}
+		buffer.WriteString(line)
+	}
+
+	// fmt.Fprintf(os.Stderr, "%s\n", buffer.String())
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	fh.Close()
+
+	ref := "Please see https://github.com/greenpau/versioned#package-metadata"
+
+	if !isVersionDunderExist {
+		return fmt.Errorf("%s module level dunder not found. %s", versionDunder, ref)
+	}
+
+	if pkg.Version != fileVersion {
+		mode := fi.Mode()
+		return ioutil.WriteFile(fp, buffer.Bytes(), mode.Perm())
+	}
+	return nil
+
+}
+
+func syncGoFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
 	var buffer bytes.Buffer
 	fh, err := os.Open(fp)
 	if err != nil {

@@ -95,6 +95,8 @@ release:
 
 ## Package Metadata
 
+### Golang
+
 For demonstration, please consider that a developer manages the following
 code as part of `main.go`:
 
@@ -196,3 +198,9 @@ Further, the `versioned` can be used to update the default values.
 ```bash
 versioned -sync cmd/myapp/main.go
 ```
+
+### Python
+
+The `versioned` inspects Python file for the presense of `__version__` module
+level dunder (see PEP 8) and, if necessary, updates the version to match the
+one found in `VERSION` file.
