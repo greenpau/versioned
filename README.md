@@ -204,3 +204,17 @@ versioned -sync cmd/myapp/main.go
 The `versioned` inspects Python file for the presense of `__version__` module
 level dunder (see PEP 8) and, if necessary, updates the version to match the
 one found in `VERSION` file.
+
+The following command detects the code uses Python based on the `.py`
+extension and synchronizes the version.
+
+```bash
+versioned -sync setup.py
+```
+
+Alternatively, when a Python file does not have an extension, use `--format`
+to explicitly state the way the file should be handled.
+
+```bash
+versioned -sync app-client --format python
+```
