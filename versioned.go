@@ -4,7 +4,7 @@ package versioned
 
 import (
 	"bufio"
-	// "bytes"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -147,12 +147,16 @@ type Version struct {
 func parseVersion(s string) (uint64, uint64, uint64, error) {
 	var major, minor, patch uint64
 	var err error
+	s = strings.TrimSpace(s)
+	s = strings.Trim(s, "\"")
+	s = strings.Trim(s, "'")
+	s = strings.TrimSpace(s)
 	parts := strings.Split(s, ".")
 	if s == "" {
 		return major, minor, patch, fmt.Errorf("empty string")
 	}
 	if len(parts) != 3 {
-		return major, minor, patch, fmt.Errorf("version must be in major.minor.patch format")
+		return major, minor, patch, fmt.Errorf("version must be in major.minor.patch format" + s)
 	}
 	if major, err = strconv.ParseUint(parts[0], 10, 64); err != nil {
 		return major, minor, patch, fmt.Errorf("failed to parse major version")
@@ -186,7 +190,7 @@ func NewVersion(s string) (*Version, error) {
 // SetFile sets file details of Version.
 func (v *Version) SetFile(fp string) error {
 	fileDir, fileName := filepath.Split(fp)
-	fileExt := filepath.Ext(fileName)
+	// fileExt := filepath.Ext(fileName)
 	v.FilePath = fp
 	v.FileDir = fileDir
 	v.FileName = fileName
@@ -194,7 +198,7 @@ func (v *Version) SetFile(fp string) error {
 		v.FileType = "npm-package"
 		return nil
 	}
-	if fileExt == "setup.py" {
+	if fileName == "setup.py" {
 		v.FileType = "python-package"
 		return nil
 	}
@@ -233,7 +237,7 @@ func (v *Version) IncrementPatch(i uint64) {
 func (v *Version) readVersionFromFile() error {
 	var versionFound bool
 	switch v.FileType {
-	case "version-file":
+	case "version-file", "python-package":
 		fh, err := os.Open(v.FilePath)
 		if err != nil {
 			return err
@@ -242,9 +246,15 @@ func (v *Version) readVersionFromFile() error {
 		scanner := bufio.NewScanner(fh)
 		for scanner.Scan() {
 			line := scanner.Text()
+			if v.FileType == "python-package" && !strings.HasPrefix(line, "__version__") {
+				continue
+			}
+			if v.FileType == "python-package" {
+				line = strings.SplitN(line, "=", 2)[1]
+			}
 			major, minor, patch, err := parseVersion(line)
 			if err != nil {
-				return err
+				return fmt.Errorf("%s: %s", v.FileType, err)
 			}
 			v.Major = major
 			v.Minor = minor
@@ -282,8 +292,6 @@ func (v *Version) readVersionFromFile() error {
 		v.Minor = minor
 		v.Patch = patch
 		versionFound = true
-	case "python-package":
-		return fmt.Errorf("wip")
 	default:
 		return fmt.Errorf("read error, file type %s is unsupported", v.FileType)
 	}
@@ -325,10 +333,29 @@ func (v *Version) UpdateFile() error {
 
 	switch v.FileType {
 	case "version-file":
-
 		return ioutil.WriteFile(v.FilePath, v.Bytes(), mode.Perm())
+	case "python-package", "npm-package":
+		var buffer bytes.Buffer
+		fh, err := os.Open(v.FilePath)
+		if err != nil {
+			return err
+		}
+		defer fh.Close()
+		scanner := bufio.NewScanner(fh)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if v.FileType == "python-package" && strings.HasPrefix(line, "__version__") {
+				buffer.WriteString("__version__ = '" + v.String() + "'\n")
+				continue
+			}
+			if v.FileType == "npm-package" && strings.Contains(line, "\"version\":") {
+				buffer.WriteString("  \"version\": \"" + v.String() + "\",\n")
+				continue
+			}
+			buffer.WriteString(line + "\n")
+		}
+		return ioutil.WriteFile(v.FilePath, buffer.Bytes(), mode.Perm())
 	default:
-
 		return fmt.Errorf("update error, file type %s is unsupported", v.FileType)
 	}
 }
