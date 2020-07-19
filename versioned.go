@@ -4,10 +4,11 @@ package versioned
 
 import (
 	"bufio"
-	"bytes"
+	// "bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -136,36 +137,68 @@ type Version struct {
 	Major    uint64
 	Minor    uint64
 	Patch    uint64
+	FilePath string
 	FileName string
+	FileType string
+	FileDir  string
+}
+
+func parseVersion(s string) (uint64, uint64, uint64, error) {
+	var major, minor, patch uint64
+	var err error
+	parts := strings.Split(s, ".")
+	if s == "" {
+		return major, minor, patch, fmt.Errorf("empty string")
+	}
+	if len(parts) != 3 {
+		return major, minor, patch, fmt.Errorf("version must be in major.minor.patch format")
+	}
+	if major, err = strconv.ParseUint(parts[0], 10, 64); err != nil {
+		return major, minor, patch, fmt.Errorf("failed to parse major version")
+	}
+	if minor, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
+		return major, minor, patch, fmt.Errorf("failed to parse minor version")
+	}
+	if patch, err = strconv.ParseUint(parts[2], 10, 64); err != nil {
+		return major, minor, patch, fmt.Errorf("failed to parse patch version")
+	}
+	return major, minor, patch, nil
 }
 
 // NewVersion returns an instance of Version.
 func NewVersion(s string) (*Version, error) {
-	if s == "" {
-		return nil, fmt.Errorf("empty string")
-	}
-	parts := strings.Split(s, ".")
-	if len(parts) != 3 {
-		return nil, fmt.Errorf("version must be in major.minor.patch format")
-	}
-	major, err := strconv.ParseUint(parts[0], 10, 64)
+	major, minor, patch, err := parseVersion(s)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse major version")
+		return nil, err
 	}
-	minor, err := strconv.ParseUint(parts[1], 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse minor version")
+	version := &Version{
+		Major: major,
+		Minor: minor,
+		Patch: patch,
 	}
-	patch, err := strconv.ParseUint(parts[2], 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse patch version")
+	if err := version.SetFile("VERSION"); err != nil {
+		return nil, err
 	}
-	return &Version{
-		Major:    major,
-		Minor:    minor,
-		Patch:    patch,
-		FileName: "VERSION",
-	}, nil
+	return version, nil
+}
+
+// SetFile sets file details of Version.
+func (v *Version) SetFile(fp string) error {
+	fileDir, fileName := filepath.Split(fp)
+	fileExt := filepath.Ext(fileName)
+	v.FilePath = fp
+	v.FileDir = fileDir
+	v.FileName = fileName
+	if fileName == "package.json" {
+		v.FileType = "npm-package"
+		return nil
+	}
+	if fileExt == "setup.py" {
+		v.FileType = "python-package"
+		return nil
+	}
+	v.FileType = "version-file"
+	return nil
 }
 
 // String returns string representation of Version.
@@ -196,48 +229,80 @@ func (v *Version) IncrementPatch(i uint64) {
 	v.Patch++
 }
 
-func readVersionFromFile(filePath string) (string, error) {
-	var buffer bytes.Buffer
-	fileHandle, err := os.Open(filePath)
-	if err != nil {
-		return "", err
+func (v *Version) readVersionFromFile() error {
+	var versionFound bool
+	switch v.FileType {
+	case "version-file":
+		fh, err := os.Open(v.FilePath)
+		if err != nil {
+			return err
+		}
+		defer fh.Close()
+		scanner := bufio.NewScanner(fh)
+		for scanner.Scan() {
+			line := scanner.Text()
+			major, minor, patch, err := parseVersion(line)
+			if err != nil {
+				return err
+			}
+			v.Major = major
+			v.Minor = minor
+			v.Patch = patch
+			versionFound = true
+			break
+		}
+		if err := scanner.Err(); err != nil {
+			return err
+		}
+		if !versionFound {
+			return fmt.Errorf("version not found")
+		}
+	case "npm-package":
+		return fmt.Errorf("wip")
+	case "python-package":
+		return fmt.Errorf("wip")
+	default:
+		return fmt.Errorf("read error, file type %s is unsupported", v.FileType)
 	}
-	defer fileHandle.Close()
 
-	scanner := bufio.NewScanner(fileHandle)
-	for scanner.Scan() {
-		line := scanner.Text()
-		buffer.WriteString(strings.TrimSpace(line))
-		break
+	if !versionFound {
+		return fmt.Errorf("version string not found")
 	}
 
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-
-	return buffer.String(), nil
+	return nil
 }
 
 // NewVersionFromFile return Version instance by
 // reading VERSION file in a current directory.
-func NewVersionFromFile(versionFile string) (*Version, error) {
-	if versionFile == "" {
-		versionFile = "VERSION"
+func NewVersionFromFile(fp string) (*Version, error) {
+	if fp == "" {
+		fp = "VERSION"
 	}
-	versionStr, err := readVersionFromFile(versionFile)
-	if err != nil {
-		return nil, fmt.Errorf("error reading %s file: %s", versionFile, err)
-	}
-	version, err := NewVersion(versionStr)
-	if err != nil {
+	version := &Version{}
+	if err := version.SetFile(fp); err != nil {
 		return nil, err
 	}
-	version.FileName = versionFile
+	if err := version.readVersionFromFile(); err != nil {
+		return nil, err
+	}
 	return version, nil
 }
 
 // UpdateFile updates version information in the file associated
 // with the version.
 func (v *Version) UpdateFile() error {
-	return ioutil.WriteFile(v.FileName, v.Bytes(), 0644)
+	fi, err := os.Stat(v.FilePath)
+	if err != nil {
+		return err
+	}
+	if !fi.Mode().IsRegular() {
+		return fmt.Errorf("path %s is not a file", v.FilePath)
+	}
+	mode := fi.Mode()
+
+	if v.FileType == "version-file" {
+		return ioutil.WriteFile(v.FilePath, v.Bytes(), mode.Perm())
+	}
+
+	return fmt.Errorf("update error, file type %s is unsupported", v.FileType)
 }

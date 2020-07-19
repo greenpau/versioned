@@ -31,7 +31,7 @@ func init() {
 	app.Documentation = "https://github.com/greenpau/versioned/"
 	app.SetVersion(appVersion, "1.0.20")
 	app.SetGitBranch(gitBranch, "master")
-	app.SetGitCommit(gitCommit, "v1.0.19-2-g592c667")
+	app.SetGitCommit(gitCommit, "v1.0.20-1-gf178633")
 	app.SetBuildUser(buildUser, "")
 	app.SetBuildDate(buildDate, "")
 }
@@ -81,7 +81,10 @@ func main() {
 			os.Exit(0)
 		}
 		version, _ := versioned.NewVersion("1.0.0")
-		version.FileName = versionFile
+		if err := version.SetFile(versionFile); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to initialize version file: %s\n", err)
+			os.Exit(1)
+		}
 		if err := version.UpdateFile(); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to initialize new version file: %s\n", err)
 			os.Exit(1)
@@ -200,9 +203,15 @@ func main() {
 			}
 			os.Exit(0)
 		}
-
+		if ext == ".ts" || ext == ".js" {
+			if err := syncJavascriptFile(pkg, syncFilePath, fi); err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
+		}
 		if fileName == "package.json" {
-			if err := syncNpmFile(pkg, syncFilePath, fi); err != nil {
+			if err := syncNpmPackageFile(pkg, syncFilePath, fi); err != nil {
 				fmt.Fprintf(os.Stderr, "%s\n", err)
 				os.Exit(1)
 			}
@@ -314,7 +323,11 @@ func updateToc(fp string, fi os.FileInfo) error {
 	return ioutil.WriteFile(fp, fileBuffer.Bytes(), mode.Perm())
 }
 
-func syncNpmFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
+func syncNpmPackageFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
+	return nil
+}
+
+func syncJavascriptFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
 	return nil
 }
 
