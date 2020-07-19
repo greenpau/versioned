@@ -21,13 +21,13 @@ This repository contains:
 ## Table of Contents
 
 * [Getting Started](#getting-started)
-  * [Increment MAJOR.MINOR.PATCH Versions](#increment-major-minor-patch-versions)
+  * [Increment MAJOR.MINOR.PATCH Versions](#increment-majorminorpatch-versions)
   * [Makefile Usage](#makefile-usage)
   * [Python](#python)
   * [Golang](#golang)
 * [Package Metadata](#package-metadata)
-  * [Golang](#golang)
-  * [Python](#python)
+  * [Golang](#golang-1)
+  * [Python](#python-1)
 * [Markdown Table of Contents](#markdown-table-of-contents)
 
 <!-- end-markdown-toc -->

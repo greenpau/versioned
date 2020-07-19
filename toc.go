@@ -15,6 +15,7 @@ type TableOfContents struct {
 	minDepth  int
 	lastDepth int
 	sep       string
+	linkRef   map[string]int
 }
 
 type tocEntry struct {
@@ -30,6 +31,7 @@ func NewTableOfContents() *TableOfContents {
 		minDepth: 1000,
 		maxDepth: 0,
 		sep:      "*",
+		linkRef:  make(map[string]int),
 	}
 }
 
@@ -61,24 +63,27 @@ func (toc *TableOfContents) AddHeading(s string) error {
 }
 
 func (toc *TableOfContents) getLink(s string) string {
-
-	// ContainsInvalidChars returns error if the provided string contains
-	// characters outside of the allowedChars character set.
 	s = strings.ToLower(s)
-	output := "#"
+	link := "#"
 	for _, c := range s {
 		if string(c) == " " {
-			output += "-"
+			link += "-"
 			continue
 		}
 		if !strings.Contains(allowedLinkChars, string(c)) {
-			output += "-"
 			continue
 		}
-		output += string(c)
+		link += string(c)
+	}
+	i, exists := toc.linkRef[link]
+	if exists {
+		link = fmt.Sprintf("%s-%d", link, i)
+		toc.linkRef[link] += 1
+	} else {
+		toc.linkRef[link] = 1
 	}
 
-	return output
+	return link
 }
 
 // ToString return string representation of TableOfContents.
