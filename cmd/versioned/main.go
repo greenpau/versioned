@@ -52,7 +52,7 @@ func main() {
 	var readmeFile string = "README.md"
 
 	flag.StringVar(&versionedDir, "path", "./", "The path to data repository")
-	flag.StringVar(&versionFile, "file", "VERSION", "The file with version info")
+	flag.StringVar(&versionFile, "source", "VERSION", "The \"source of truth\" file with version info")
 	flag.BoolVar(&isInitialize, "init", false, "initialize a new version file")
 	flag.StringVar(&syncFilePath, "sync", "", "synchronize info from version file to `FILE`")
 	flag.StringVar(&syncFileFormat, "format", "", "synchronize according to specific language, i.e. py, js, go, ts, etc.")

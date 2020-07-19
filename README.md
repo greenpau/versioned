@@ -23,11 +23,10 @@ This repository contains:
 * [Getting Started](#getting-started)
   * [Increment MAJOR.MINOR.PATCH Versions](#increment-majorminorpatch-versions)
   * [Makefile Usage](#makefile-usage)
-  * [Python](#python)
-  * [Golang](#golang)
 * [Package Metadata](#package-metadata)
-  * [Golang](#golang-1)
-  * [Python](#python-1)
+  * [Golang](#golang)
+  * [Python](#python)
+  * [Node.js](#nodejs)
 * [Markdown Table of Contents](#markdown-table-of-contents)
 
 <!-- end-markdown-toc -->
@@ -107,14 +106,6 @@ release:
         @echo "  git push --delete origin v$(APP_VERSION)"
         @echo "  git tag --delete v$(APP_VERSION)"
 ```
-
-### Python
-
-TODO: remove
-
-### Golang
-
-TODO: remove
 
 ## Package Metadata
 
@@ -232,7 +223,7 @@ The following command detects the code uses Python based on the `.py`
 extension and synchronizes the version.
 
 ```bash
-versioned -sync setup.py
+versioned -sync requests.py
 ```
 
 Alternatively, when a Python file does not have an extension, use `--format`
@@ -240,6 +231,22 @@ to explicitly state the way the file should be handled.
 
 ```bash
 versioned -sync app-client --format python
+```
+
+Additionally, if a file is a part of a Python package, then there is no need
+for `VERSION` file. Rather, use `--source` to indicate the source of truth
+for version information.
+
+```bash
+versioned --source setup.py -sync requests.py
+```
+
+### Node.js
+
+The `versioned` inspects `npm` package file for version information.
+
+```bash
+versioned --source package.json
 ```
 
 ## Markdown Table of Contents
