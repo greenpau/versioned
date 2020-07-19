@@ -5,6 +5,7 @@ package versioned
 import (
 	"bufio"
 	// "bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -258,7 +259,29 @@ func (v *Version) readVersionFromFile() error {
 			return fmt.Errorf("version not found")
 		}
 	case "npm-package":
-		return fmt.Errorf("wip")
+		fc, err := ioutil.ReadFile(v.FilePath)
+		if err != nil {
+			return err
+		}
+		var fd map[string]interface{}
+		if err := json.Unmarshal(fc, &fd); err != nil {
+			return err
+		}
+		if fd == nil {
+			return fmt.Errorf("version not found in %s", v.FilePath)
+		}
+		versionStr, exists := fd["version"]
+		if !exists {
+			return fmt.Errorf("version not found in %s", v.FilePath)
+		}
+		major, minor, patch, err := parseVersion(versionStr.(string))
+		if err != nil {
+			return err
+		}
+		v.Major = major
+		v.Minor = minor
+		v.Patch = patch
+		versionFound = true
 	case "python-package":
 		return fmt.Errorf("wip")
 	default:
@@ -300,9 +323,12 @@ func (v *Version) UpdateFile() error {
 	}
 	mode := fi.Mode()
 
-	if v.FileType == "version-file" {
-		return ioutil.WriteFile(v.FilePath, v.Bytes(), mode.Perm())
-	}
+	switch v.FileType {
+	case "version-file":
 
-	return fmt.Errorf("update error, file type %s is unsupported", v.FileType)
+		return ioutil.WriteFile(v.FilePath, v.Bytes(), mode.Perm())
+	default:
+
+		return fmt.Errorf("update error, file type %s is unsupported", v.FileType)
+	}
 }
