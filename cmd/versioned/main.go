@@ -242,6 +242,12 @@ func updateToc(fp string, fi os.FileInfo) error {
 	scanner := bufio.NewScanner(fh)
 	for scanner.Scan() {
 		line := scanner.Text()
+		if !isTocFound && firstHeadingIndex == 0 {
+			if strings.HasPrefix(line, "##") {
+				firstHeadingIndex = i
+			}
+		}
+
 		if strings.HasPrefix(line, tocEndMarker) {
 			isInsideToc = false
 			continue
@@ -250,6 +256,7 @@ func updateToc(fp string, fi os.FileInfo) error {
 			isInsideToc = true
 			isTocFound = true
 			tocIndex = i
+			firstHeadingIndex = 0
 			continue
 		}
 
@@ -258,7 +265,7 @@ func updateToc(fp string, fi os.FileInfo) error {
 			continue
 		}
 
-		if !isInsideToc && isTocFound {
+		if !isInsideToc {
 			if strings.HasPrefix(line, "##") {
 				if firstHeadingIndex == 0 {
 					firstHeadingIndex = i
@@ -289,7 +296,8 @@ func updateToc(fp string, fi os.FileInfo) error {
 	if isTocFound {
 		fileBuffer.WriteString(strings.Join(fileLines[:tocIndex+1], "\n"))
 	} else {
-		fileBuffer.WriteString(strings.Join(fileLines[:firstHeadingIndex+1], "\n"))
+		fileBuffer.WriteString(strings.Join(fileLines[:firstHeadingIndex], "\n"))
+		fileBuffer.WriteString("\n")
 	}
 	fileBuffer.WriteString(tocBeginMarker + "\n")
 	fileBuffer.WriteString("## Table of Contents" + "\n\n")
@@ -298,9 +306,11 @@ func updateToc(fp string, fi os.FileInfo) error {
 	if isTocFound {
 		fileBuffer.WriteString(strings.Join(fileLines[tocIndex:], "\n") + "\n")
 	} else {
+		fileBuffer.WriteString("\n")
 		fileBuffer.WriteString(strings.Join(fileLines[firstHeadingIndex:], "\n") + "\n")
 	}
 	mode := fi.Mode()
+
 	return ioutil.WriteFile(fp, fileBuffer.Bytes(), mode.Perm())
 }
 
