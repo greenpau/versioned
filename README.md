@@ -18,6 +18,18 @@ This repository contains:
   package metadata management utility
 
 <!-- begin-markdown-toc -->
+## Table of Contents
+
+* [Getting Started](#getting-started)
+  * [Increment MAJOR.MINOR.PATCH Versions](#increment-major-minor-patch-versions)
+  * [Makefile Usage](#makefile-usage)
+  * [Python](#python)
+  * [Golang](#golang)
+* [Package Metadata](#package-metadata)
+  * [Golang](#golang)
+  * [Python](#python)
+* [Markdown Table of Contents](#markdown-table-of-contents)
+
 <!-- end-markdown-toc -->
 
 ## Getting Started
@@ -28,7 +40,7 @@ First, install `versioned`:
 go get -u github.com/greenpau/versioned/cmd/versioned
 ```
 
-### Increment major.minor.patch Versions
+### Increment MAJOR.MINOR.PATCH Versions
 
 Browse to a repository and initialize `VERSION` file with `versioned`:
 
@@ -95,6 +107,14 @@ release:
         @echo "  git push --delete origin v$(APP_VERSION)"
         @echo "  git tag --delete v$(APP_VERSION)"
 ```
+
+### Python
+
+TODO: remove
+
+### Golang
+
+TODO: remove
 
 ## Package Metadata
 

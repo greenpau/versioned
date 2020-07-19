@@ -218,12 +218,15 @@ func main() {
 
 func updateToc(fp string, fi os.FileInfo) error {
 	var fileBuffer bytes.Buffer
+	var fileLines []string
 	var tocBuffer bytes.Buffer
 	var tocBeginMarker string = "<!-- begin-markdown-toc -->"
 	var tocEndMarker string = "<!-- end-markdown-toc -->"
 	var isTocOutdated bool = true
 	var isTocFound bool
 	var isInsideToc bool
+	var tocIndex int
+	var firstHeadingIndex int
 
 	fh, err := os.Open(fp)
 	if err != nil {
@@ -235,16 +238,21 @@ func updateToc(fp string, fi os.FileInfo) error {
 	toc := versioned.NewTableOfContents()
 
 	// Discovery Scan
+	var i int
 	scanner := bufio.NewScanner(fh)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "<!-- end-markdown-toc -->") {
+		if strings.HasPrefix(line, tocEndMarker) {
 			isInsideToc = false
+			continue
 		}
-		if strings.HasPrefix(line, "<!-- begin-markdown-toc -->") {
+		if strings.HasPrefix(line, tocBeginMarker) {
 			isInsideToc = true
 			isTocFound = true
+			tocIndex = i
+			continue
 		}
+
 		if isInsideToc {
 			tocBuffer.WriteString(line + "\n")
 			continue
@@ -252,55 +260,48 @@ func updateToc(fp string, fi os.FileInfo) error {
 
 		if !isInsideToc && isTocFound {
 			if strings.HasPrefix(line, "##") {
+				if firstHeadingIndex == 0 {
+					firstHeadingIndex = i
+				}
 				if err := toc.AddHeading(line); err != nil {
 					return fmt.Errorf("toc error: %s", err.Error())
 				}
 			}
 		}
+
+		fileLines = append(fileLines, line)
+		i++
 	}
 
 	if err := scanner.Err(); err != nil {
 		return err
 	}
 
-	fmt.Fprintf(os.Stderr, "%s\n", toc.ToString())
-	fmt.Fprintf(os.Stderr, "%s\n", isTocFound)
-	fmt.Fprintf(os.Stderr, "%s\n", isTocOutdated)
-
-	// Found outdated Table of Contents
-	if isTocFound && isTocOutdated {
-		// scanner := bufio.NewScanner(fh)
-		fmt.Fprintf(os.Stderr, "meeee\n")
-		for scanner.Scan() {
-			line := scanner.Text()
-			fmt.Fprintf(os.Stderr, "%s\n", line)
-			if strings.HasPrefix(line, tocEndMarker) {
-				isInsideToc = false
-				continue
-			}
-			if strings.HasPrefix(line, tocBeginMarker) {
-				isInsideToc = true
-				fileBuffer.WriteString(tocBeginMarker + "\n")
-				fileBuffer.WriteString(toc.ToString())
-				fileBuffer.WriteString(tocEndMarker + "\n")
-				continue
-			}
-			if isInsideToc {
-				continue
-			}
-			fileBuffer.WriteString(line + "\n")
-			fmt.Fprintf(os.Stderr, "%s\n", line)
-		}
-		if err := scanner.Err(); err != nil {
-			return err
-		}
-
-		fmt.Fprintf(os.Stderr, "%s\n", fileBuffer.String())
+	if isTocFound && isInsideToc {
+		return fmt.Errorf("toc error: failed to find end marker")
 	}
 
-	fh.Close()
+	if !isTocOutdated {
+		return nil
+	}
 
-	return nil
+	// Found outdated Table of Contents
+	if isTocFound {
+		fileBuffer.WriteString(strings.Join(fileLines[:tocIndex+1], "\n"))
+	} else {
+		fileBuffer.WriteString(strings.Join(fileLines[:firstHeadingIndex+1], "\n"))
+	}
+	fileBuffer.WriteString(tocBeginMarker + "\n")
+	fileBuffer.WriteString("## Table of Contents" + "\n\n")
+	fileBuffer.WriteString(toc.ToString() + "\n")
+	fileBuffer.WriteString(tocEndMarker + "\n")
+	if isTocFound {
+		fileBuffer.WriteString(strings.Join(fileLines[tocIndex:], "\n") + "\n")
+	} else {
+		fileBuffer.WriteString(strings.Join(fileLines[firstHeadingIndex:], "\n") + "\n")
+	}
+	mode := fi.Mode()
+	return ioutil.WriteFile(fp, fileBuffer.Bytes(), mode.Perm())
 }
 
 func syncNpmFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
