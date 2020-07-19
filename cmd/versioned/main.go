@@ -29,9 +29,9 @@ func init() {
 	app = versioned.NewPackageManager("versioned")
 	app.Description = "Simplified package metadata management for Go packages."
 	app.Documentation = "https://github.com/greenpau/versioned/"
-	app.SetVersion(appVersion, "1.0.19")
+	app.SetVersion(appVersion, "1.0.20")
 	app.SetGitBranch(gitBranch, "master")
-	app.SetGitCommit(gitCommit, "v1.0.18-8-g9197340")
+	app.SetGitCommit(gitCommit, "v1.0.19-2-g592c667")
 	app.SetBuildUser(buildUser, "")
 	app.SetBuildDate(buildDate, "")
 }
