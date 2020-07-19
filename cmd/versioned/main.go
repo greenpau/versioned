@@ -49,7 +49,7 @@ func main() {
 	var syncFilePath string
 	var syncFileFormat string
 	var isTocUpdate bool
-	var readmeFile string = "README.md"
+	var readmeFile = "README.md"
 
 	flag.StringVar(&versionedDir, "path", "./", "The path to data repository")
 	flag.StringVar(&versionFile, "source", "VERSION", "The \"source of truth\" file with version info")
@@ -229,9 +229,9 @@ func updateToc(fp string, fi os.FileInfo) error {
 	var fileBuffer bytes.Buffer
 	var fileLines []string
 	var tocBuffer bytes.Buffer
-	var tocBeginMarker string = "<!-- begin-markdown-toc -->"
-	var tocEndMarker string = "<!-- end-markdown-toc -->"
-	var isTocOutdated bool = true
+	var tocBeginMarker = "<!-- begin-markdown-toc -->"
+	var tocEndMarker = "<!-- end-markdown-toc -->"
+	var isTocOutdated = true
 	var isTocFound bool
 	var isInsideToc bool
 	var tocIndex int
