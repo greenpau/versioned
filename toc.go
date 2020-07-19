@@ -54,8 +54,12 @@ func (toc *TableOfContents) AddHeading(s string) error {
 	if h.depth < toc.minDepth {
 		toc.minDepth = h.depth
 	}
-	if (toc.lastDepth - h.depth) > 1 {
-		return fmt.Errorf("heading hopped more than one level")
+	depthDiff := h.depth - toc.lastDepth
+	if (depthDiff) > 1 && toc.lastDepth > 0 {
+		return fmt.Errorf(
+			"heading hopped more than one level: %d, %d (current) vs. %d (previous)",
+			depthDiff, h.depth, toc.lastDepth,
+		)
 	}
 	toc.lastDepth = h.depth
 	toc.entries = append(toc.entries, h)
@@ -78,7 +82,7 @@ func (toc *TableOfContents) getLink(s string) string {
 	i, exists := toc.linkRef[link]
 	if exists {
 		link = fmt.Sprintf("%s-%d", link, i)
-		toc.linkRef[link] += 1
+		toc.linkRef[link]++
 	} else {
 		toc.linkRef[link] = 1
 	}
