@@ -281,7 +281,7 @@ will be identical.
 
 ```ts
 export const Config = {
-  Version: "1.0.0",
+  Version: "1.0.2",
 };
 ```
 
