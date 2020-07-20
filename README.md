@@ -244,9 +244,45 @@ versioned --source setup.py -sync requests.py
 ### Node.js
 
 The `versioned` inspects `npm` package file for version information.
+The following command displays the current version of a package.
 
 ```bash
-versioned --source package.json
+$ versioned --source package.json
+1.0.1
+```
+
+The following command patches the version to `1.0.2`:
+
+```bash
+$ versioned --source package.json --patch
+increased patch version by 1, current version: 1.0.2
+updated version: 1.0.2, previous version: 1.0.1
+```
+
+As for the synchronization of the version in `package.json` and other
+files in the package, the following rules apply.
+
+Consider creating `src/Config.ts` Typescript file.
+
+```ts
+export const Config = {
+  Version: "1.0.0",
+};
+```
+
+The `versioned` finds a reference to `Version` and syncronizes the value:
+
+```bash
+versioned --source package.json --sync src/Config.ts
+```
+
+After running the above command, the version in `package.json` and `src/Config.ts`
+will be identical.
+
+```ts
+export const Config = {
+  Version: "1.0.0",
+};
 ```
 
 ## Markdown Table of Contents
