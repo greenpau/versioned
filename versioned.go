@@ -156,7 +156,7 @@ func parseVersion(s string) (uint64, uint64, uint64, error) {
 		return major, minor, patch, fmt.Errorf("empty string")
 	}
 	if len(parts) != 3 {
-		return major, minor, patch, fmt.Errorf("version must be in major.minor.patch format" + s)
+		return major, minor, patch, fmt.Errorf("version must be in major.minor.patch format")
 	}
 	if major, err = strconv.ParseUint(parts[0], 10, 64); err != nil {
 		return major, minor, patch, fmt.Errorf("failed to parse major version")
