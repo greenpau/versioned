@@ -122,7 +122,7 @@ func TestVersionedCalculus(t *testing.T) {
 			actions:    []action{},
 			shouldFail: false,
 			shouldErr:  true,
-			errMessage: "version must be in major.minor.patch format",
+			errMessage: "version must be in major.minor.patch format, version string: 1.1.1.1",
 		},
 		{
 			input:      "1aZ.1.1",
@@ -130,7 +130,7 @@ func TestVersionedCalculus(t *testing.T) {
 			actions:    []action{},
 			shouldFail: false,
 			shouldErr:  true,
-			errMessage: "failed to parse major version",
+			errMessage: "failed to parse major version, version string: 1aZ.1.1",
 		},
 		{
 			input:      "1.1aZ.1",
@@ -138,7 +138,7 @@ func TestVersionedCalculus(t *testing.T) {
 			actions:    []action{},
 			shouldFail: false,
 			shouldErr:  true,
-			errMessage: "failed to parse minor version",
+			errMessage: "failed to parse minor version, version string: 1.1aZ.1",
 		},
 		{
 			input:      "1.1.1aZ",
@@ -146,7 +146,7 @@ func TestVersionedCalculus(t *testing.T) {
 			actions:    []action{},
 			shouldFail: false,
 			shouldErr:  true,
-			errMessage: "failed to parse patch version",
+			errMessage: "failed to parse patch version, version string: 1.1.1aZ",
 		},
 	} {
 		version, err := NewVersion(test.input)
