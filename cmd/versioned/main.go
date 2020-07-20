@@ -190,14 +190,14 @@ func main() {
 		ext := filepath.Ext(syncFilePath)
 		fileDir, fileName := filepath.Split(syncFilePath)
 		if ext == ".py" || syncFileFormat == "py" || syncFileFormat == "python" {
-			if err := syncPyFile(pkg, syncFilePath, fi); err != nil {
+			if err := syncPythonFile(pkg, syncFilePath, fi); err != nil {
 				fmt.Fprintf(os.Stderr, "%s\n", err)
 				os.Exit(1)
 			}
 			os.Exit(0)
 		}
 		if ext == ".go" {
-			if err := syncGoFile(pkg, syncFilePath, fi); err != nil {
+			if err := syncGolangFile(pkg, syncFilePath, fi); err != nil {
 				fmt.Fprintf(os.Stderr, "%s\n", err)
 				os.Exit(1)
 			}
@@ -205,13 +205,6 @@ func main() {
 		}
 		if ext == ".ts" || ext == ".js" {
 			if err := syncJavascriptFile(pkg, syncFilePath, fi); err != nil {
-				fmt.Fprintf(os.Stderr, "%s\n", err)
-				os.Exit(1)
-			}
-			os.Exit(0)
-		}
-		if fileName == "package.json" {
-			if err := syncNpmPackageFile(pkg, syncFilePath, fi); err != nil {
 				fmt.Fprintf(os.Stderr, "%s\n", err)
 				os.Exit(1)
 			}
@@ -323,18 +316,57 @@ func updateToc(fp string, fi os.FileInfo) error {
 	return ioutil.WriteFile(fp, fileBuffer.Bytes(), mode.Perm())
 }
 
-func syncNpmPackageFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
-	return nil
-}
-
 func syncJavascriptFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
+	var buffer bytes.Buffer
+	fh, err := os.Open(fp)
+	if err != nil {
+		return err
+	}
+	defer fh.Close()
+
+	isVersionFound := false
+	fileVersion := ""
+
+	scanner := bufio.NewScanner(fh)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "Version: ") {
+			isVersionFound = true
+			v := strings.SplitN(line, ":", 2)[1]
+			v = strings.TrimSpace(v)
+			v = strings.Replace(v, ",", "", -1)
+			v = strings.Replace(v, "'", "", -1)
+			v = strings.Replace(v, "\"", "", -1)
+			v = strings.TrimSpace(v)
+			fileVersion = v
+			if fileVersion != pkg.Version {
+				buffer.WriteString(strings.ReplaceAll(line, fileVersion, pkg.Version) + "\n")
+			} else {
+				buffer.WriteString(line + "\n")
+			}
+			continue
+		}
+		buffer.WriteString(line + "\n")
+	}
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+	fh.Close()
+	ref := "Please see https://github.com/greenpau/versioned#nodejs-javascript-typescript"
+	if !isVersionFound {
+		return fmt.Errorf("version not found. %s", ref)
+	}
+	if pkg.Version != fileVersion {
+		mode := fi.Mode()
+		return ioutil.WriteFile(fp, buffer.Bytes(), mode.Perm())
+	}
 	return nil
 }
 
-// syncPyFile inspects a Python file for __version__ module level
+// syncPythonFile inspects a Python file for __version__ module level
 // dunder (see PEP 8) and, if necessary, updates the version to
 // match the one found in VERSION file.
-func syncPyFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
+func syncPythonFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
 	var buffer bytes.Buffer
 	fh, err := os.Open(fp)
 	if err != nil {
@@ -352,7 +384,6 @@ func syncPyFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error 
 		line = line + "\n"
 		if strings.HasPrefix(line, versionDunder) {
 			isVersionDunderExist = true
-			// fmt.Fprintf(os.Stderr, "%s\n", line)
 			v := strings.SplitN(line, "=", 2)[1]
 			v = strings.TrimSpace(v)
 			v = strings.Replace(v, "'", "", -1)
@@ -367,29 +398,22 @@ func syncPyFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error 
 		}
 		buffer.WriteString(line)
 	}
-
-	// fmt.Fprintf(os.Stderr, "%s\n", buffer.String())
 	if err := scanner.Err(); err != nil {
 		return err
 	}
-
 	fh.Close()
-
 	ref := "Please see https://github.com/greenpau/versioned#package-metadata"
-
 	if !isVersionDunderExist {
 		return fmt.Errorf("%s module level dunder not found. %s", versionDunder, ref)
 	}
-
 	if pkg.Version != fileVersion {
 		mode := fi.Mode()
 		return ioutil.WriteFile(fp, buffer.Bytes(), mode.Perm())
 	}
 	return nil
-
 }
 
-func syncGoFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
+func syncGolangFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
 	var buffer bytes.Buffer
 	fh, err := os.Open(fp)
 	if err != nil {

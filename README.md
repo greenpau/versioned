@@ -26,7 +26,7 @@ This repository contains:
 * [Package Metadata](#package-metadata)
   * [Golang](#golang)
   * [Python](#python)
-  * [Node.js](#nodejs)
+  * [Node.js, Javascript, Typescript](#nodejs-javascript-typescript)
 * [Markdown Table of Contents](#markdown-table-of-contents)
 
 <!-- end-markdown-toc -->
@@ -241,7 +241,7 @@ for version information.
 versioned --source setup.py -sync requests.py
 ```
 
-### Node.js
+### Node.js, Javascript, Typescript
 
 The `versioned` inspects `npm` package file for version information.
 The following command displays the current version of a package.
