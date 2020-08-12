@@ -20,6 +20,9 @@ func TestNewTableOfContents(t *testing.T) {
 	if err := toc.AddHeading("##### Heading 5"); err != nil {
 		t.Fatal(err)
 	}
+	if err := toc.AddHeading("##### Heading 6"); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := toc.AddHeading("## Heading 2"); err != nil {
 		t.Fatal(err)
@@ -33,7 +36,16 @@ func TestNewTableOfContents(t *testing.T) {
 	if err := toc.AddHeading("##### Heading 5"); err != nil {
 		t.Fatal(err)
 	}
+	if err := toc.AddHeading("##### Heading-5"); err != nil {
+		t.Fatal(err)
+	}
+	if err := toc.AddHeading("##### Heading 5"); err != nil {
+		t.Fatal(err)
+	}
 	if err := toc.AddHeading("##### Heading 6"); err != nil {
+		t.Fatal(err)
+	}
+	if err := toc.AddHeading("##### Heading-6"); err != nil {
 		t.Fatal(err)
 	}
 

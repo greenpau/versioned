@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-const allowedLinkChars = "0123456789abcdefghijklmnopqrstuvwxyz"
+const allowedLinkChars = "0123456789abcdefghijklmnopqrstuvwxyz-"
 
 // TableOfContents represent Markdown Table of Contents section.
 type TableOfContents struct {
@@ -81,8 +81,8 @@ func (toc *TableOfContents) getLink(s string) string {
 	}
 	i, exists := toc.linkRef[link]
 	if exists {
-		link = fmt.Sprintf("%s-%d", link, i)
 		toc.linkRef[link]++
+		link = fmt.Sprintf("%s-%d", link, i)
 	} else {
 		toc.linkRef[link] = 1
 	}
