@@ -76,7 +76,7 @@ release:
 	@./bin/$(BINARY) -patch
 	@git add VERSION
 	@git commit -m 'updated VERSION file'
-	@./bin/$(BINARY) -sync cmd/$(BINARY)/main.go
+	@./bin/$(BINARY) -release -sync cmd/$(BINARY)/main.go
 	@echo "Patched version"
 	@git add cmd/$(BINARY)/main.go
 	@git commit -m "released v`cat VERSION | head -1`"

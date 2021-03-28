@@ -31,7 +31,7 @@ func init() {
 	app.Documentation = "https://github.com/greenpau/versioned/"
 	app.SetVersion(appVersion, "1.0.23")
 	app.SetGitBranch(gitBranch, "main")
-	app.SetGitCommit(gitCommit, "v1.0.22-3-g230de95")
+	app.SetGitCommit(gitCommit, "v1.0.23")
 	app.SetBuildUser(buildUser, "")
 	app.SetBuildDate(buildDate, "")
 }
@@ -45,6 +45,7 @@ func main() {
 	var isIncrementPatch bool
 	var isInitialize bool
 	var isSilent bool
+	var isRelease bool
 	var factor uint64
 	var syncFilePath string
 	var syncFileFormat string
@@ -60,6 +61,7 @@ func main() {
 	flag.BoolVar(&isIncrementMinor, "minor", false, "increment minor version")
 	flag.BoolVar(&isIncrementPatch, "patch", false, "increment patch version")
 	flag.BoolVar(&isTocUpdate, "toc", false, "update table of contents")
+	flag.BoolVar(&isRelease, "release", false, "omits commit version when syncing")
 	flag.Uint64Var(&factor, "factor", 1, "increase factor")
 	flag.BoolVar(&isSilent, "silent", false, "silent execution")
 	flag.BoolVar(&isShowVersion, "version", false, "version information")
@@ -182,6 +184,12 @@ func main() {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(1)
 		}
+
+		if isRelease {
+			branch = ""
+			commit = ""
+		}
+
 		pkg := versioned.NewPackageManager("")
 		pkg.Version = version.String()
 		pkg.Git.Branch = branch
