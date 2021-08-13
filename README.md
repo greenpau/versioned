@@ -312,3 +312,9 @@ is Apache License 2.0:
 ```bash
 versioned -addlicense -copyright="Paul Greenberg (greenpau@outlook.com)" -year=2020 -filepath ./main.go
 ```
+
+The following command removes license header from a file:
+
+```bash
+versioned -striplicense -filepath=toc_test.go
+```

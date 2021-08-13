@@ -58,6 +58,7 @@ type LicenseHeader struct {
 	Year            uint64
 	CopyrightHolder string
 	LicenseType     string
+	Action          string
 	wrapChars       []string
 	raw             []byte
 	offset          int
@@ -72,14 +73,12 @@ func NewLicenseHeader() *LicenseHeader {
 	}
 }
 
-// UpdateLicense updates a license header of a file.
-func UpdateLicense(h *LicenseHeader) error {
+// AddLicense adds a license header to a file.
+func AddLicense(h *LicenseHeader) error {
 	if err := h.build(); err != nil {
 		return err
 	}
-
 	// log.Printf("header:\n%s", h.raw)
-
 	if err := h.inspect(); err != nil {
 		return err
 	}
@@ -89,12 +88,28 @@ func UpdateLicense(h *LicenseHeader) error {
 		}
 		return nil
 	}
-
-	if err := h.add(); err != nil {
+	if err := h.rewrite("add"); err != nil {
 		return fmt.Errorf("encountered error adding license header: %v", err)
 	}
 	return nil
+}
 
+// StripLicense remove a license header from a file.
+func StripLicense(h *LicenseHeader) error {
+	if err := h.build(); err != nil {
+		return err
+	}
+	// log.Printf("header:\n%s", h.raw)
+	if err := h.inspect(); err != nil {
+		return err
+	}
+	if h.found {
+		if err := h.rewrite("strip"); err != nil {
+			return fmt.Errorf("encountered error stripping license header: %v", err)
+		}
+		return nil
+	}
+	return nil
 }
 
 func (h *LicenseHeader) inspect() error {
@@ -122,10 +137,30 @@ func (h *LicenseHeader) inspect() error {
 	return nil
 }
 
-func (h *LicenseHeader) add() error {
+func (h *LicenseHeader) rewrite(action string) error {
+	var offset int
+	switch action {
+	case "add", "strip":
+	default:
+		return fmt.Errorf("unsupported action: %q", action)
+	}
+
 	b, err := ioutil.ReadFile(h.FilePath)
 	if err != nil {
 		return fmt.Errorf("failed reading file %q: %v", h.FilePath, err)
+	}
+
+	if action == "strip" {
+		for _, ls := range []string{"\n\n", "\r\r", "\r\n\r\n"} {
+			offset = bytes.Index(b, []byte(h.wrapChars[2]+ls))
+			if offset > 0 {
+				offset = offset + len([]byte(h.wrapChars[2]+ls))
+				break
+			}
+		}
+		if offset < 1 {
+			return nil
+		}
 	}
 
 	fi, err := os.Stat(h.FilePath)
@@ -147,11 +182,18 @@ func (h *LicenseHeader) add() error {
 		return fmt.Errorf("failed seeking the beginning of file %q: %v", h.FilePath, err)
 	}
 
-	if _, err := fh.Write(h.raw); err != nil {
-		return fmt.Errorf("failed prepending header to file %q: %v", h.FilePath, err)
-	}
-	if _, err := fh.Write(b); err != nil {
-		return fmt.Errorf("failed writing existing content to file %q: %v", h.FilePath, err)
+	switch action {
+	case "add":
+		if _, err := fh.Write(h.raw); err != nil {
+			return fmt.Errorf("failed prepending header to file %q: %v", h.FilePath, err)
+		}
+		if _, err := fh.Write(b); err != nil {
+			return fmt.Errorf("failed writing existing content to file %q: %v", h.FilePath, err)
+		}
+	case "strip":
+		if _, err := fh.Write(b[offset:]); err != nil {
+			return fmt.Errorf("failed writing existing content to file %q: %v", h.FilePath, err)
+		}
 	}
 	return nil
 }

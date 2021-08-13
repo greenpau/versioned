@@ -61,7 +61,7 @@ func main() {
 	var factor uint64
 	var syncFilePath string
 	var syncFileFormat string
-	var isTocUpdate, isLicenseUpdate bool
+	var isTocUpdate, isAddLicense, isStripLicense bool
 	var targetFilePath string
 	var licenseCopyrightHolder, licenseType string
 	var licenseCopyrightYear uint64
@@ -81,7 +81,8 @@ func main() {
 	flag.BoolVar(&isTocUpdate, "toc", false, "update table of contents")
 
 	// License flags.
-	flag.BoolVar(&isLicenseUpdate, "addlicense", false, "update license header")
+	flag.BoolVar(&isAddLicense, "addlicense", false, "add license header a file")
+	flag.BoolVar(&isStripLicense, "striplicense", false, "strip license header from a file")
 	flag.StringVar(&licenseType, "license", "apache", "license type")
 	flag.StringVar(&licenseCopyrightHolder, "copyright", "", "license copyright holder")
 	flag.Uint64Var(&licenseCopyrightYear, "year", 0, "copyright year")
@@ -130,7 +131,7 @@ func main() {
 			exitWithError(err)
 		}
 		os.Exit(0)
-	case isLicenseUpdate:
+	case isAddLicense:
 		lic := versioned.NewLicenseHeader()
 		if err := lic.AddFilePath(targetFilePath); err != nil {
 			exitWithError(err)
@@ -144,7 +145,16 @@ func main() {
 		if err := lic.AddLicenseType(licenseType); err != nil {
 			exitWithError(err)
 		}
-		if err := versioned.UpdateLicense(lic); err != nil {
+		if err := versioned.AddLicense(lic); err != nil {
+			exitWithError(err)
+		}
+		os.Exit(0)
+	case isStripLicense:
+		lic := versioned.NewLicenseHeader()
+		if err := lic.AddFilePath(targetFilePath); err != nil {
+			exitWithError(err)
+		}
+		if err := versioned.StripLicense(lic); err != nil {
 			exitWithError(err)
 		}
 		os.Exit(0)
