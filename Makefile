@@ -1,4 +1,4 @@
-.PHONY: test ctest covdir coverage docs linter qtest clean dep release
+.PHONY: test ctest covdir coverage docs linter qtest clean dep release license
 APP_VERSION:=$(shell cat VERSION | head -1)
 GIT_COMMIT:=$(shell git describe --dirty --always)
 GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD -- | head -1)
@@ -49,6 +49,9 @@ coverage:
 	@go test -covermode=count -coverprofile=.coverage/coverage.out ./*.go
 	@go tool cover -func=.coverage/coverage.out | grep -v "100.0"
 
+license:
+	@for f in `find ./ -type f -name '*.go'`; do ./bin/versioned -addlicense -copyright="Paul Greenberg (greenpau@outlook.com)" -year=2020 -filepath=$$f; done
+
 docs:
 	@mkdir -p .doc
 	@go doc -all > .doc/index.txt
@@ -65,7 +68,8 @@ qtest:
 
 dep:
 	@echo "Making dependencies check ..."
-	@go get -u golang.org/x/lint/golint
+	@golint || go get -u golang.org/x/lint/golint
+
 
 release:
 	@echo "Making release"

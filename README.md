@@ -28,6 +28,7 @@ This repository contains:
   * [Python](#python)
   * [Node.js, Javascript, Typescript](#nodejs-javascript-typescript)
 * [Markdown Table of Contents](#markdown-table-of-contents)
+* [License Header](#license-header)
 
 <!-- end-markdown-toc -->
 
@@ -295,4 +296,19 @@ The following command either generates or updates the Table of Contents in
 
 ```bash
 versioned --toc
+```
+
+Alternatively, specify Markdown file path:
+
+```bash
+versioned -toc -filepath ./another_doc.md
+```
+
+## License Header
+
+The `versioned` is capable of update license header. The default license type
+is Apache License 2.0:
+
+```bash
+versioned -addlicense -copyright="Paul Greenberg (greenpau@outlook.com)" -year=2020 -filepath ./main.go
 ```

@@ -1,4 +1,16 @@
 // Copyright 2020 Paul Greenberg (greenpau@outlook.com)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package main
 
@@ -49,8 +61,10 @@ func main() {
 	var factor uint64
 	var syncFilePath string
 	var syncFileFormat string
-	var isTocUpdate bool
-	var readmeFile = "README.md"
+	var isTocUpdate, isLicenseUpdate bool
+	var targetFilePath string
+	var licenseCopyrightHolder, licenseType string
+	var licenseCopyrightYear uint64
 
 	flag.StringVar(&versionedDir, "path", "./", "The path to data repository")
 	flag.StringVar(&versionFile, "source", "VERSION", "The \"source of truth\" file with version info")
@@ -60,7 +74,18 @@ func main() {
 	flag.BoolVar(&isIncrementMajor, "major", false, "increment major version")
 	flag.BoolVar(&isIncrementMinor, "minor", false, "increment minor version")
 	flag.BoolVar(&isIncrementPatch, "patch", false, "increment patch version")
+
+	flag.StringVar(&targetFilePath, "filepath", "", "target file path")
+
+	// Markdown Table of Contents flags.
 	flag.BoolVar(&isTocUpdate, "toc", false, "update table of contents")
+
+	// License flags.
+	flag.BoolVar(&isLicenseUpdate, "addlicense", false, "update license header")
+	flag.StringVar(&licenseType, "license", "apache", "license type")
+	flag.StringVar(&licenseCopyrightHolder, "copyright", "", "license copyright holder")
+	flag.Uint64Var(&licenseCopyrightYear, "year", 0, "copyright year")
+
 	flag.BoolVar(&isRelease, "release", false, "omits commit version when syncing")
 	flag.Uint64Var(&factor, "factor", 1, "increase factor")
 	flag.BoolVar(&isSilent, "silent", false, "silent execution")
@@ -90,6 +115,37 @@ func main() {
 		if err := version.UpdateFile(); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to initialize new version file: %s\n", err)
 			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
+	switch {
+	case isTocUpdate:
+		if targetFilePath == "" {
+			targetFilePath = "README.md"
+		}
+		toc := versioned.NewTableOfContents()
+		toc.AddFilePath(targetFilePath)
+		if err := versioned.UpdateToc(toc); err != nil {
+			exitWithError(err)
+		}
+		os.Exit(0)
+	case isLicenseUpdate:
+		lic := versioned.NewLicenseHeader()
+		if err := lic.AddFilePath(targetFilePath); err != nil {
+			exitWithError(err)
+		}
+		if err := lic.AddCopyrightHolder(licenseCopyrightHolder); err != nil {
+			exitWithError(err)
+		}
+		if err := lic.AddYear(licenseCopyrightYear); err != nil {
+			exitWithError(err)
+		}
+		if err := lic.AddLicenseType(licenseType); err != nil {
+			exitWithError(err)
+		}
+		if err := versioned.UpdateLicense(lic); err != nil {
+			exitWithError(err)
 		}
 		os.Exit(0)
 	}
@@ -144,22 +200,6 @@ func main() {
 			fmt.Fprintf(os.Stderr, "updated version: %s, previous version: %s\n",
 				version, &oldVersion,
 			)
-		}
-	}
-
-	if isTocUpdate {
-		fi, err := os.Stat(readmeFile)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
-			os.Exit(1)
-		}
-		if !fi.Mode().IsRegular() {
-			fmt.Fprintf(os.Stderr, "path %s is not a file\n", readmeFile)
-			os.Exit(1)
-		}
-		if err := updateToc(readmeFile, fi); err != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
-			os.Exit(1)
 		}
 	}
 
@@ -224,104 +264,6 @@ func main() {
 	}
 
 	os.Exit(0)
-}
-
-func updateToc(fp string, fi os.FileInfo) error {
-	var fileBuffer bytes.Buffer
-	var fileLines []string
-	var tocBuffer bytes.Buffer
-	var tocBeginMarker = "<!-- begin-markdown-toc -->"
-	var tocEndMarker = "<!-- end-markdown-toc -->"
-	var isTocOutdated = true
-	var isTocFound bool
-	var isInsideToc bool
-	var tocIndex int
-	var firstHeadingIndex int
-
-	fh, err := os.Open(fp)
-	if err != nil {
-		return err
-	}
-	defer fh.Close()
-
-	// Initialize ToC
-	toc := versioned.NewTableOfContents()
-
-	// Discovery Scan
-	var i int
-	scanner := bufio.NewScanner(fh)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if !isTocFound && firstHeadingIndex == 0 {
-			if strings.HasPrefix(line, "##") {
-				firstHeadingIndex = i
-			}
-		}
-
-		if strings.HasPrefix(line, tocEndMarker) {
-			isInsideToc = false
-			continue
-		}
-		if strings.HasPrefix(line, tocBeginMarker) {
-			isInsideToc = true
-			isTocFound = true
-			tocIndex = i
-			firstHeadingIndex = 0
-			continue
-		}
-
-		if isInsideToc {
-			tocBuffer.WriteString(line + "\n")
-			continue
-		}
-
-		if !isInsideToc {
-			if strings.HasPrefix(line, "##") {
-				if firstHeadingIndex == 0 {
-					firstHeadingIndex = i
-				}
-				if err := toc.AddHeading(line); err != nil {
-					return fmt.Errorf("toc error: %s", err.Error())
-				}
-			}
-		}
-
-		fileLines = append(fileLines, line)
-		i++
-	}
-
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	if isTocFound && isInsideToc {
-		return fmt.Errorf("toc error: failed to find end marker")
-	}
-
-	if !isTocOutdated {
-		return nil
-	}
-
-	// Found outdated Table of Contents
-	if isTocFound {
-		fileBuffer.WriteString(strings.Join(fileLines[:tocIndex+1], "\n"))
-	} else {
-		fileBuffer.WriteString(strings.Join(fileLines[:firstHeadingIndex], "\n"))
-		fileBuffer.WriteString("\n")
-	}
-	fileBuffer.WriteString(tocBeginMarker + "\n")
-	fileBuffer.WriteString("## Table of Contents" + "\n\n")
-	fileBuffer.WriteString(toc.ToString() + "\n")
-	fileBuffer.WriteString(tocEndMarker + "\n")
-	if isTocFound {
-		fileBuffer.WriteString(strings.Join(fileLines[tocIndex:], "\n") + "\n")
-	} else {
-		fileBuffer.WriteString("\n")
-		fileBuffer.WriteString(strings.Join(fileLines[firstHeadingIndex:], "\n") + "\n")
-	}
-	mode := fi.Mode()
-
-	return ioutil.WriteFile(fp, fileBuffer.Bytes(), mode.Perm())
 }
 
 func syncJavascriptFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
@@ -542,4 +484,9 @@ func executeShell(args []string) (string, error) {
 		return "", fmt.Errorf("Error executing %s: %s", args, err)
 	}
 	return strings.Split(stdout.String(), "\n")[0], nil
+}
+
+func exitWithError(err interface{}) {
+	fmt.Fprintf(os.Stderr, "%s\n", err)
+	os.Exit(1)
 }
