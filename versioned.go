@@ -335,21 +335,23 @@ func NewVersionFromFile(fp string) (*Version, error) {
 // with the version.
 func (v *Version) UpdateFile() error {
 	fi, err := os.Stat(v.FilePath)
-	if os.IsNotExist(err) {
-		// Create version file.
-		f, err := os.OpenFile(v.FilePath, os.O_CREATE|os.O_WRONLY, 0600)
-		if err != nil {
-			return fmt.Errorf("error creating %q file: %v", v.FilePath, err)
-		}
-		if err := f.Close(); err != nil {
-			return fmt.Errorf("error closing %q file: %v", v.FilePath, err)
-		}
-		fi, err = os.Stat(v.FilePath)
-		if err != nil {
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Create version file.
+			f, err := os.OpenFile(v.FilePath, os.O_CREATE|os.O_WRONLY, 0600)
+			if err != nil {
+				return fmt.Errorf("error creating %q file: %v", v.FilePath, err)
+			}
+			if err := f.Close(); err != nil {
+				return fmt.Errorf("error closing %q file: %v", v.FilePath, err)
+			}
+			fi, err = os.Stat(v.FilePath)
+			if err != nil {
+				return err
+			}
+		} else {
 			return err
 		}
-	} else {
-		return err
 	}
 	if !fi.Mode().IsRegular() {
 		return fmt.Errorf("path %s is not a file", v.FilePath)
