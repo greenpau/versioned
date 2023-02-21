@@ -24,19 +24,20 @@ all:
 		-asmflags="all=-trimpath $(GOPATH)/src" cmd/$(BINARY)/*.go
 	@chmod +x bin/$(BINARY)
 	@./bin/$(BINARY) --version
-	@echo "Done!"
+	@echo "DEBUG: completed $@"
 
 linter:
 	@echo "Running lint checks"
 	@golint *.go
 	@golint cmd/$(BINARY)/*.go
-	@echo "PASS: golint"
+	@echo "DEBUG: completed $@"
 
 test: covdir linter
 	@go test $(VERBOSE) -coverprofile=.coverage/coverage.out ./*.go
+	@echo "DEBUG: completed $@"
 
 ctest: covdir linter
-	@richgo version || go get -u github.com/kyoh86/richgo
+	@richgo version || go install github.com/kyoh86/richgo@latest
 	@time richgo test $(VERBOSE) $(TEST) -coverprofile=.coverage/coverage.out ./*.go
 
 covdir:
@@ -48,6 +49,7 @@ coverage:
 	@go tool cover -html=.coverage/coverage.out -o .coverage/coverage.html
 	@go test -covermode=count -coverprofile=.coverage/coverage.out ./*.go
 	@go tool cover -func=.coverage/coverage.out | grep -v "100.0"
+	@echo "DEBUG: completed $@"
 
 license:
 	@for f in `find ./ -type f -name '*.go'`; do ./bin/versioned -addlicense -copyright="Paul Greenberg (greenpau@outlook.com)" -year=2020 -filepath=$$f; done
@@ -68,8 +70,8 @@ qtest:
 
 dep:
 	@echo "Making dependencies check ..."
-	@golint || go get -u golang.org/x/lint/golint
-
+	@golint || go install golang.org/x/lint/golint@latest
+	@echo "DEBUG: completed $@"
 
 release:
 	@echo "Making release"
@@ -90,3 +92,4 @@ release:
 	@echo "If necessary, run the following commands:"
 	@echo "  git push --delete origin v$(APP_VERSION)"
 	@echo "  git tag --delete v$(APP_VERSION)"
+	@echo "DEBUG: completed $@"
