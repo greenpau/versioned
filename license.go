@@ -19,6 +19,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"regexp"
+
 	// "log"
 	"os"
 	"path/filepath"
@@ -30,26 +32,18 @@ import (
 var (
 	licenseTemplates = map[string]string{
 		"apache": tmplApache,
+		"asl":    tmplAsl,
+		"mit":    tmplMit,
+		"gpl3":   tmplGpl3,
 	}
 
 	licenseClues = map[string]string{
 		"apache": "Licensed under the Apache License, Version 2.0",
+		"asl":    "Licensed under the Amazon Software License",
+		"mit":    "Licensed under the MIT License",
+		"gpl3":   "Licensed under the GPLv3 License",
 	}
 )
-
-const tmplApache = `Copyright {{.Year}} {{.CopyrightHolder}}
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.`
 
 // LicenseHeader represent license headers.
 type LicenseHeader struct {
@@ -125,10 +119,25 @@ func (h *LicenseHeader) inspect() error {
 	}
 	if bytes.Index(header, []byte(licenseClues[h.LicenseType])) >= 0 {
 		h.found = true
-		// log.Printf("X:\n%s", header)
-		// log.Printf("Y:\n%s", h.raw)
+		// log.Printf("X:\n$%s$", header)
+		// log.Printf("Y:\n$%s$", h.raw)
+		// Exact match.
 		if bytes.Index(header, h.raw) >= 0 {
 			h.match = true
+		}
+		// Approximate match.
+		if !h.match {
+			reY := regexp.MustCompile(`\s(\d{4})\s`)
+			reW := regexp.MustCompile(`\s*`)
+			// Remove copyright year.
+			actual := reY.ReplaceAll(header, []byte(" "))
+			expected := reY.ReplaceAll(h.raw, []byte(" "))
+			// Remove all whitespaces.
+			actual = reW.ReplaceAll(actual, []byte(""))
+			expected = reW.ReplaceAll(expected, []byte(""))
+			if bytes.Index(actual, expected) >= 0 {
+				h.match = true
+			}
 		}
 	}
 	if !h.found && bytes.Index(header, []byte("Copyright ")) >= 0 {
@@ -229,6 +238,10 @@ func (h *LicenseHeader) AddYear(i uint64) error {
 func (h *LicenseHeader) AddLicenseType(s string) error {
 	switch s {
 	case "apache":
+	case "asl":
+	case "mit":
+	case "gpl3", "gplv3":
+		s = "gpl3"
 	case "":
 		s = "apache"
 	default:
@@ -251,6 +264,8 @@ func (h *LicenseHeader) getWrapChars() error {
 		h.wrapChars = []string{"", "// ", ""}
 	case ".js":
 		h.wrapChars = []string{"/**", " * ", " */"}
+	case ".swift":
+		h.wrapChars = []string{"", "// ", ""}
 	default:
 		return fmt.Errorf("license header unsupported for file extension %q in %q", h.FileExtension, h.FilePath)
 	}
@@ -287,3 +302,69 @@ func (h *LicenseHeader) build() error {
 	h.raw = header.Bytes()
 	return nil
 }
+
+const tmplApache = `Copyright {{.Year}} {{.CopyrightHolder}}
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.`
+
+const tmplAsl = `Copyright {{.Year}} {{.CopyrightHolder}}. All Rights Reserved.
+
+Licensed under the Amazon Software License (the "License").
+You may not use this file except in compliance with the License.
+A copy of the License is located at
+
+    http://aws.amazon.com/asl/
+
+or in the "license" file accompanying this file. This file is distributed
+on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. See the License for the specific language governing
+permissions and limitations under the License.`
+
+const tmplMit = `Copyright (c) {{.Year}} {{.CopyrightHolder}}
+
+Licensed under the MIT License.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.`
+
+const tmplGpl3 = `Copyright (C) {{.Year}} {{.CopyrightHolder}}
+
+Licensed under the GPLv3 License.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.`
