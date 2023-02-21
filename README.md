@@ -321,6 +321,12 @@ for src_file in `find ./ -type f -name '*.swift'`; do
 done
 ```
 
+The available license headers are:
+* `mit`
+* `asl`
+* `apache`
+* `gpl3`
+
 The following command removes license header from a file:
 
 ```bash

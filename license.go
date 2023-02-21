@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 
 	// "log"
 	"os"
@@ -118,10 +119,25 @@ func (h *LicenseHeader) inspect() error {
 	}
 	if bytes.Index(header, []byte(licenseClues[h.LicenseType])) >= 0 {
 		h.found = true
-		// log.Printf("X:\n%s", header)
-		// log.Printf("Y:\n%s", h.raw)
+		// log.Printf("X:\n$%s$", header)
+		// log.Printf("Y:\n$%s$", h.raw)
+		// Exact match.
 		if bytes.Index(header, h.raw) >= 0 {
 			h.match = true
+		}
+		// Approximate match.
+		if !h.match {
+			reY := regexp.MustCompile(`\s(\d{4})\s`)
+			reW := regexp.MustCompile(`\s*`)
+			// Remove copyright year.
+			actual := reY.ReplaceAll(header, []byte(" "))
+			expected := reY.ReplaceAll(h.raw, []byte(" "))
+			// Remove all whitespaces.
+			actual = reW.ReplaceAll(actual, []byte(""))
+			expected = reW.ReplaceAll(expected, []byte(""))
+			if bytes.Index(actual, expected) >= 0 {
+				h.match = true
+			}
 		}
 	}
 	if !h.found && bytes.Index(header, []byte("Copyright ")) >= 0 {
@@ -224,7 +240,8 @@ func (h *LicenseHeader) AddLicenseType(s string) error {
 	case "apache":
 	case "asl":
 	case "mit":
-	case "gpl3":
+	case "gpl3", "gplv3":
+		s = "gpl3"
 	case "":
 		s = "apache"
 	default:
