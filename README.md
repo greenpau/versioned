@@ -313,6 +313,14 @@ is Apache License 2.0:
 versioned -addlicense -copyright="Paul Greenberg (greenpau@outlook.com)" -year=2020 -filepath ./main.go
 ```
 
+The following command finds all `.swift` files and adds GPLv3 license header.
+
+```bash
+for src_file in `find ./ -type f -name '*.swift'`; do
+  versioned -addlicense -copyright="Paul Greenberg (greenpau@outlook.com)" -year=2023 -license gpl3 -filepath=$src_file;
+done
+```
+
 The following command removes license header from a file:
 
 ```bash
