@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+
 	// "log"
 	"os"
 	"path/filepath"
@@ -30,26 +31,14 @@ import (
 var (
 	licenseTemplates = map[string]string{
 		"apache": tmplApache,
+		"asl":    tmplAsl,
 	}
 
 	licenseClues = map[string]string{
 		"apache": "Licensed under the Apache License, Version 2.0",
+		"asl":    "Licensed under the Amazon Software License",
 	}
 )
-
-const tmplApache = `Copyright {{.Year}} {{.CopyrightHolder}}
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.`
 
 // LicenseHeader represent license headers.
 type LicenseHeader struct {
@@ -229,6 +218,7 @@ func (h *LicenseHeader) AddYear(i uint64) error {
 func (h *LicenseHeader) AddLicenseType(s string) error {
 	switch s {
 	case "apache":
+	case "asl":
 	case "":
 		s = "apache"
 	default:
@@ -251,6 +241,8 @@ func (h *LicenseHeader) getWrapChars() error {
 		h.wrapChars = []string{"", "// ", ""}
 	case ".js":
 		h.wrapChars = []string{"/**", " * ", " */"}
+	case ".swift":
+		h.wrapChars = []string{"", "// ", ""}
 	default:
 		return fmt.Errorf("license header unsupported for file extension %q in %q", h.FileExtension, h.FilePath)
 	}
@@ -287,3 +279,30 @@ func (h *LicenseHeader) build() error {
 	h.raw = header.Bytes()
 	return nil
 }
+
+const tmplApache = `Copyright {{.Year}} {{.CopyrightHolder}}
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.`
+
+const tmplAsl = `Copyright {{.Year}} {{.CopyrightHolder}}. All Rights Reserved.
+
+Licensed under the Amazon Software License (the "License").
+You may not use this file except in compliance with the License.
+A copy of the License is located at
+
+    http://aws.amazon.com/asl/
+
+or in the "license" file accompanying this file. This file is distributed
+on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. See the License for the specific language governing
+permissions and limitations under the License.`
