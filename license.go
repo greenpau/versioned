@@ -33,12 +33,14 @@ var (
 		"apache": tmplApache,
 		"asl":    tmplAsl,
 		"mit":    tmplMit,
+		"gpl3":   tmplGpl3,
 	}
 
 	licenseClues = map[string]string{
 		"apache": "Licensed under the Apache License, Version 2.0",
 		"asl":    "Licensed under the Amazon Software License",
 		"mit":    "Licensed under the MIT License",
+		"gpl3":   "Licensed under the GPLv3 License",
 	}
 )
 
@@ -222,6 +224,7 @@ func (h *LicenseHeader) AddLicenseType(s string) error {
 	case "apache":
 	case "asl":
 	case "mit":
+	case "gpl3":
 	case "":
 		s = "apache"
 	default:
@@ -331,3 +334,20 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.`
+
+const tmplGpl3 = `Copyright (C) {{.Year}} {{.CopyrightHolder}}
+
+Licensed under the GPLv3 License.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.`
