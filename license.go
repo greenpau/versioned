@@ -58,6 +58,7 @@ type LicenseHeader struct {
 	offset          int
 	found           bool
 	match           bool
+	mismatchText    string
 }
 
 // NewLicenseHeader returns an instance of LicenseHeader.
@@ -78,7 +79,7 @@ func AddLicense(h *LicenseHeader) error {
 	}
 	if h.found {
 		if !h.match {
-			return fmt.Errorf("found license header mismatch in %q", h.FilePath)
+			return fmt.Errorf("found license header mismatch in %q, %s", h.FilePath, h.mismatchText)
 		}
 		return nil
 	}
@@ -119,10 +120,7 @@ func (h *LicenseHeader) inspect() error {
 	}
 	if bytes.Index(header, []byte(licenseClues[h.LicenseType])) >= 0 {
 		h.found = true
-		// log.Printf("X:\n$%s$", header)
-		// log.Printf("Y:\n$%s$", h.raw)
-		// Exact match.
-		if bytes.Index(header, h.raw) >= 0 {
+		if bytes.Index(bytes.TrimSpace(header), bytes.TrimSpace(h.raw)) >= 0 {
 			h.match = true
 		}
 		// Approximate match.
@@ -138,6 +136,10 @@ func (h *LicenseHeader) inspect() error {
 			if bytes.Index(actual, expected) >= 0 {
 				h.match = true
 			}
+		}
+
+		if !h.match {
+			h.mismatchText = fmt.Sprintf("\n>>>expected:\n%s\n>>>got:\n%s", header, h.raw)
 		}
 	}
 	if !h.found && bytes.Index(header, []byte("Copyright ")) >= 0 {
@@ -262,7 +264,7 @@ func (h *LicenseHeader) getWrapChars() error {
 	switch h.FileExtension {
 	case ".go":
 		h.wrapChars = []string{"", "// ", ""}
-	case ".js":
+	case ".js", ".ts", ".tsx", ".mjs":
 		h.wrapChars = []string{"/**", " * ", " */"}
 	case ".swift":
 		h.wrapChars = []string{"", "// ", ""}
