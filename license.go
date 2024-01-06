@@ -108,7 +108,7 @@ func StripLicense(h *LicenseHeader) error {
 }
 
 func (h *LicenseHeader) inspect() error {
-	h.offset = len(h.raw) + 10
+	h.offset = len(h.raw) + 100
 	fh, err := os.Open(h.FilePath)
 	if err != nil {
 		return fmt.Errorf("failed opening file %q: %v", h.FilePath, err)
@@ -116,10 +116,25 @@ func (h *LicenseHeader) inspect() error {
 	defer fh.Close()
 	header := make([]byte, h.offset)
 	if _, err := fh.Read(header); err != nil {
-		return fmt.Errorf("failed reading file %q: %v", h.FilePath, err)
+		if err.Error() != "EOF" {
+			return fmt.Errorf("failed reading file %q: %v", h.FilePath, err)
+		}
+		return nil
 	}
+
+	// Remove irrelevant content from the header
+	reCode1 := regexp.MustCompile(`#!/.*\n`)
+	reCode2 := regexp.MustCompile(`#.*coding: .*\n`)
+	// Remove code instructions
+	header = reCode1.ReplaceAll(header, []byte(""))
+	header = reCode2.ReplaceAll(header, []byte(""))
+	header = bytes.TrimSpace(header)
+	// TODO(greenpau): Remove lines that do not have copyright.
+	// See h.wrapChars
+
 	if bytes.Index(header, []byte(licenseClues[h.LicenseType])) >= 0 {
 		h.found = true
+
 		if bytes.Index(bytes.TrimSpace(header), bytes.TrimSpace(h.raw)) >= 0 {
 			h.match = true
 		}
@@ -139,7 +154,7 @@ func (h *LicenseHeader) inspect() error {
 		}
 
 		if !h.match {
-			h.mismatchText = fmt.Sprintf("\n>>>expected:\n%s\n>>>got:\n%s", header, h.raw)
+			h.mismatchText = fmt.Sprintf("\n>>>got:\n%s\n>>>expected:\n%s", header, h.raw)
 		}
 	}
 	if !h.found && bytes.Index(header, []byte("Copyright ")) >= 0 {
@@ -158,7 +173,9 @@ func (h *LicenseHeader) rewrite(action string) error {
 
 	b, err := ioutil.ReadFile(h.FilePath)
 	if err != nil {
-		return fmt.Errorf("failed reading file %q: %v", h.FilePath, err)
+		if err.Error() != "EOF" {
+			return fmt.Errorf("failed reading file %q: %v", h.FilePath, err)
+		}
 	}
 
 	if action == "strip" {
@@ -195,12 +212,59 @@ func (h *LicenseHeader) rewrite(action string) error {
 
 	switch action {
 	case "add":
-		if _, err := fh.Write(h.raw); err != nil {
-			return fmt.Errorf("failed prepending header to file %q: %v", h.FilePath, err)
+		if len(b) > 0 {
+
+			switch h.FileExtension {
+			case ".py":
+				// Determine code instructions and only add the header after them.
+				injectByteID := 0
+				for _, ptrn := range []string{`.{0,100}#!/.*\n`, `.{0,100}#.*\scoding:.*\n`} {
+					reCode := regexp.MustCompile(ptrn)
+					if reCode.Match(b) {
+						match := reCode.FindAllIndex(b, 1)
+						if match != nil && len(match) > 0 {
+							if match[0][1] > injectByteID {
+								injectByteID = match[0][1]
+							}
+						}
+					}
+				}
+				if injectByteID == 0 {
+					if _, err := fh.Write(h.raw); err != nil {
+						return fmt.Errorf("failed prepending header to file %q: %v", h.FilePath, err)
+					}
+					if _, err := fh.Write(b); err != nil {
+						return fmt.Errorf("failed writing existing content to file %q: %v", h.FilePath, err)
+					}
+				} else {
+					if _, err := fh.Write(b[:injectByteID]); err != nil {
+						return fmt.Errorf("failed writing existing content to file %q: %v", h.FilePath, err)
+					}
+					fh.Write([]byte("\n"))
+					if _, err := fh.Write(h.raw); err != nil {
+						return fmt.Errorf("failed prepending header to file %q: %v", h.FilePath, err)
+					}
+					if _, err := fh.Write(b[injectByteID:]); err != nil {
+						return fmt.Errorf("failed writing existing content to file %q: %v", h.FilePath, err)
+					}
+				}
+			default:
+				if _, err := fh.Write(h.raw); err != nil {
+					return fmt.Errorf("failed prepending header to file %q: %v", h.FilePath, err)
+				}
+				if _, err := fh.Write(b); err != nil {
+					return fmt.Errorf("failed writing existing content to file %q: %v", h.FilePath, err)
+				}
+			}
+			return nil
 		}
-		if _, err := fh.Write(b); err != nil {
-			return fmt.Errorf("failed writing existing content to file %q: %v", h.FilePath, err)
+		if len(b) == 0 {
+			if _, err := fh.Write(h.raw); err != nil {
+				return fmt.Errorf("failed prepending header to file %q: %v", h.FilePath, err)
+			}
+			return nil
 		}
+
 	case "strip":
 		if _, err := fh.Write(b[offset:]); err != nil {
 			return fmt.Errorf("failed writing existing content to file %q: %v", h.FilePath, err)
@@ -264,6 +328,8 @@ func (h *LicenseHeader) getWrapChars() error {
 	switch h.FileExtension {
 	case ".go":
 		h.wrapChars = []string{"", "// ", ""}
+	case ".py":
+		h.wrapChars = []string{"#", "# ", "#"}
 	case ".js", ".ts", ".tsx", ".mjs":
 		h.wrapChars = []string{"/**", " * ", " */"}
 	case ".swift":
