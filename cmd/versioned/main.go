@@ -248,6 +248,13 @@ func main() {
 
 		ext := filepath.Ext(syncFilePath)
 		fileDir, fileName := filepath.Split(syncFilePath)
+		if syncFileFormat == "blender" {
+			if err := syncBlenderFile(pkg, syncFilePath, fi); err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
+		}
 		if ext == ".py" || syncFileFormat == "py" || syncFileFormat == "python" {
 			if err := syncPythonFile(pkg, syncFilePath, fi); err != nil {
 				fmt.Fprintf(os.Stderr, "%s\n", err)
@@ -371,6 +378,89 @@ func syncPythonFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) er
 		mode := fi.Mode()
 		return ioutil.WriteFile(fp, buffer.Bytes(), mode.Perm())
 	}
+	return nil
+}
+
+// syncBlenderFile inspects a Python file for bl_info["version"] and,
+// if necessary, updates it to match the version found in VERSION file.
+func syncBlenderFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
+	var buffer bytes.Buffer
+
+	fh, err := os.Open(fp)
+	if err != nil {
+		return err
+	}
+	defer fh.Close()
+
+	scanner := bufio.NewScanner(fh)
+
+	inBlInfo := false
+	versionFound := false
+	fileVersion := ""
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		trimmed := strings.TrimSpace(line)
+
+		// Detect start of bl_info dictionary
+		if strings.HasPrefix(trimmed, "bl_info") && strings.Contains(trimmed, "{") {
+			inBlInfo = true
+		}
+
+		if inBlInfo && strings.HasPrefix(trimmed, "\"version\"") ||
+			inBlInfo && strings.HasPrefix(trimmed, "'version'") {
+
+			versionFound = true
+
+			// Extract tuple portion: (1, 0, 0)
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) != 2 {
+				return fmt.Errorf("invalid bl_info version format")
+			}
+
+			raw := strings.TrimSpace(parts[1])
+			raw = strings.TrimSuffix(raw, ",")
+			raw = strings.TrimSpace(raw)
+
+			// Convert tuple "(1, 2, 3)" -> "1.2.3"
+			raw = strings.TrimPrefix(raw, "(")
+			raw = strings.TrimSuffix(raw, ")")
+			raw = strings.ReplaceAll(raw, " ", "")
+			fileVersion = strings.ReplaceAll(raw, ",", ".")
+
+			if fileVersion != pkg.Version {
+				// Convert pkg.Version "1.2.3" -> (1, 2, 3)
+				versionParts := strings.Split(pkg.Version, ".")
+				newTuple := "(" + strings.Join(versionParts, ", ") + ")"
+				buffer.WriteString(fmt.Sprintf(`    "version": %s,`+"\n", newTuple))
+			} else {
+				buffer.WriteString(line + "\n")
+			}
+
+			continue
+		}
+
+		// Detect end of bl_info dictionary
+		if inBlInfo && strings.Contains(trimmed, "}") {
+			inBlInfo = false
+		}
+
+		buffer.WriteString(line + "\n")
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	if !versionFound {
+		return fmt.Errorf("bl_info['version'] not found")
+	}
+
+	if fileVersion != pkg.Version {
+		mode := fi.Mode()
+		return ioutil.WriteFile(fp, buffer.Bytes(), mode.Perm())
+	}
+
 	return nil
 }
 

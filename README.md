@@ -27,6 +27,7 @@ This repository contains:
   * [Golang](#golang)
   * [Python](#python)
   * [Node.js, Javascript, Typescript](#nodejs-javascript-typescript)
+  * [Blender Files](#blender-files)
 * [Markdown Table of Contents](#markdown-table-of-contents)
 * [License Header](#license-header)
 
@@ -285,6 +286,23 @@ export const Config = {
   Version: "1.0.2",
 };
 ```
+
+### Blender Files
+
+You can automatically sync the version inside a Blender add-on's `bl_info` dictionary with your project's `VERSION` file.
+
+Use the following command:
+
+```bash
+versioned -release -sync blender_addon/__init__.py -format blender
+```
+
+* Locates the `version` field inside the `bl_info` dictionary
+* Compares it to the version defined in your `VERSION` file
+* Updates the tuple (e.g. `(1, 2, 3)`) if it does not match
+* Leaves the file unchanged if the versions are already in sync
+
+This ensures your Blender add-on metadata always matches your project release version.
 
 ## Markdown Table of Contents
 
