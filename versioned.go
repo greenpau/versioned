@@ -31,6 +31,7 @@ import (
 type PackageManager struct {
 	Name          string        `json:"name" xml:"name" yaml:"name"`
 	Version       string        `json:"version" xml:"version" yaml:"version"`
+	ToolsVersion  string        `json:"tools_version" xml:"tools_version" yaml:"tools_version"`
 	Description   string        `json:"description" xml:"description" yaml:"description"`
 	Documentation string        `json:"documentation" xml:"documentation" yaml:"documentation"`
 	Git           gitMetadata   `json:"git" xml:"git" yaml:"git"`
@@ -79,10 +80,11 @@ func (p *PackageManager) Banner() string {
 				))
 		}
 		sb.WriteString(fmt.Sprintf(
-			" (%s/%s %s)",
+			" (%s/%s %s versioned %s)",
 			runtime.GOOS,
 			runtime.GOARCH,
 			runtime.Version(),
+			p.ToolsVersion,
 		))
 	}
 	return sb.String()
@@ -97,6 +99,7 @@ func (p *PackageManager) ShortBanner() string {
 
 // SetVersion sets Version attribute of PackageManager.
 func (p *PackageManager) SetVersion(v, d string) {
+	p.ToolsVersion = d
 	if v != "" {
 		p.Version = v
 		return

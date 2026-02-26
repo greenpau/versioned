@@ -19,13 +19,14 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/greenpau/versioned"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/greenpau/versioned"
 )
 
 var (
