@@ -1,6 +1,6 @@
 # versioned
 
-<a href="https://github.com/greenpau/versioned/actions/" target="_blank"><img src="https://github.com/greenpau/versioned/workflows/build/badge.svg?branch=master"></a>
+<a href="https://github.com/greenpau/versioned/actions/workflows/build.yml" target="_blank"><img src="https://github.com/greenpau/versioned/actions/workflows/build.yml/badge.svg"></a>
 <a href="https://pkg.go.dev/github.com/greenpau/versioned" target="_blank"><img src="https://img.shields.io/badge/godoc-reference-blue.svg"></a>
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 
