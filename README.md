@@ -38,7 +38,7 @@ This repository contains:
 First, install `versioned`:
 
 ```bash
-go get -u github.com/greenpau/versioned/cmd/versioned
+go install github.com/greenpau/versioned/cmd/versioned@latest
 ```
 
 ### Increment MAJOR.MINOR.PATCH Versions
