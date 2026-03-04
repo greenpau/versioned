@@ -132,10 +132,9 @@ func (h *LicenseHeader) inspect() error {
 	// TODO(greenpau): Remove lines that do not have copyright.
 	// See h.wrapChars
 
-	if bytes.Index(header, []byte(licenseClues[h.LicenseType])) >= 0 {
+	if bytes.Contains(header, []byte(licenseClues[h.LicenseType])) {
 		h.found = true
-
-		if bytes.Index(bytes.TrimSpace(header), bytes.TrimSpace(h.raw)) >= 0 {
+		if bytes.Contains(bytes.TrimSpace(header), bytes.TrimSpace(h.raw)) {
 			h.match = true
 		}
 		// Approximate match.
@@ -148,7 +147,7 @@ func (h *LicenseHeader) inspect() error {
 			// Remove all whitespaces.
 			actual = reW.ReplaceAll(actual, []byte(""))
 			expected = reW.ReplaceAll(expected, []byte(""))
-			if bytes.Index(actual, expected) >= 0 {
+			if bytes.Contains(actual, expected) {
 				h.match = true
 			}
 		}
@@ -157,7 +156,7 @@ func (h *LicenseHeader) inspect() error {
 			h.mismatchText = fmt.Sprintf("\n>>>got:\n%s\n>>>expected:\n%s", header, h.raw)
 		}
 	}
-	if !h.found && bytes.Index(header, []byte("Copyright ")) >= 0 {
+	if !h.found && bytes.Contains(header, []byte("Copyright ")) {
 		h.found = true
 	}
 	return nil
@@ -222,10 +221,8 @@ func (h *LicenseHeader) rewrite(action string) error {
 					reCode := regexp.MustCompile(ptrn)
 					if reCode.Match(b) {
 						match := reCode.FindAllIndex(b, 1)
-						if match != nil && len(match) > 0 {
-							if match[0][1] > injectByteID {
-								injectByteID = match[0][1]
-							}
+						if len(match) > 0 && match[0][1] > injectByteID {
+							injectByteID = match[0][1]
 						}
 					}
 				}

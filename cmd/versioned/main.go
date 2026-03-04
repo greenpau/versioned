@@ -255,6 +255,13 @@ func main() {
 			}
 			os.Exit(0)
 		}
+		if strings.HasSuffix(syncFilePath, "package.json") {
+			if err := syncPackageJSON(pkg, syncFilePath, fi); err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
+		}
 		if ext == ".py" || syncFileFormat == "py" || syncFileFormat == "python" {
 			if err := syncPythonFile(pkg, syncFilePath, fi); err != nil {
 				fmt.Fprintf(os.Stderr, "%s\n", err)
@@ -464,7 +471,7 @@ func syncBlenderFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) e
 	return nil
 }
 
-func syncGolangFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
+func syncGolangFile(pkg *versioned.PackageManager, fp string, _ os.FileInfo) error {
 	var buffer bytes.Buffer
 	fh, err := os.Open(fp)
 	if err != nil {
@@ -590,4 +597,55 @@ func executeShell(args []string) (string, error) {
 func exitWithError(err interface{}) {
 	fmt.Fprintf(os.Stderr, "%s\n", err)
 	os.Exit(1)
+}
+
+// syncPackageJSON updates the version field in a Node.js package.json file.
+func syncPackageJSON(pkg *versioned.PackageManager, fp string, fi os.FileInfo) error {
+	var buffer bytes.Buffer
+	fh, err := os.Open(fp)
+	if err != nil {
+		return err
+	}
+	defer fh.Close()
+
+	isVersionFound := false
+	fileVersion := ""
+	// Regex to match "version": "1.2.3" with potential spaces/tabs
+	versionRegex := regexp.MustCompile(`(?i)^(\s*"version"\s*:\s*")([^"]+)("\s*,?\s*)$`)
+
+	scanner := bufio.NewScanner(fh)
+	for scanner.Scan() {
+		line := scanner.Text()
+		matches := versionRegex.FindStringSubmatch(line)
+
+		if len(matches) == 4 {
+			isVersionFound = true
+			prefix := matches[1]
+			fileVersion = matches[2]
+			suffix := matches[3]
+
+			if fileVersion != pkg.Version {
+				buffer.WriteString(prefix + pkg.Version + suffix + "\n")
+			} else {
+				buffer.WriteString(line + "\n")
+			}
+			continue
+		}
+		buffer.WriteString(line + "\n")
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+	fh.Close()
+
+	if !isVersionFound {
+		return fmt.Errorf("version field not found in %s", fp)
+	}
+
+	if pkg.Version == fileVersion {
+		return nil
+	}
+
+	return os.WriteFile(fp, buffer.Bytes(), fi.Mode().Perm())
 }

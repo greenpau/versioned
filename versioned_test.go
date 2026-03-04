@@ -43,7 +43,7 @@ func TestVersionedCalculus(t *testing.T) {
 			input:  "1.0.0",
 			output: "2.0.0",
 			actions: []action{
-				action{
+				{
 					operation:   "increment_major",
 					incrementBy: 1,
 				},
@@ -56,7 +56,7 @@ func TestVersionedCalculus(t *testing.T) {
 			input:  "1.0.0",
 			output: "1.1.0",
 			actions: []action{
-				action{
+				{
 					operation:   "increment_minor",
 					incrementBy: 1,
 				},
@@ -69,7 +69,7 @@ func TestVersionedCalculus(t *testing.T) {
 			input:  "1.0.0",
 			output: "1.0.1",
 			actions: []action{
-				action{
+				{
 					operation:   "increment_patch",
 					incrementBy: 1,
 				},
@@ -82,15 +82,15 @@ func TestVersionedCalculus(t *testing.T) {
 			input:  "1.0.0",
 			output: "2.1.1",
 			actions: []action{
-				action{
+				{
 					operation:   "increment_major",
 					incrementBy: 1,
 				},
-				action{
+				{
 					operation:   "increment_minor",
 					incrementBy: 1,
 				},
-				action{
+				{
 					operation:   "increment_patch",
 					incrementBy: 1,
 				},
@@ -104,7 +104,7 @@ func TestVersionedCalculus(t *testing.T) {
 			input:       "1.0.1",
 			output:      "1.1.0",
 			actions: []action{
-				action{
+				{
 					operation:   "increment_minor",
 					incrementBy: 1,
 				},
@@ -118,7 +118,7 @@ func TestVersionedCalculus(t *testing.T) {
 			input:       "1.1.1",
 			output:      "2.0.0",
 			actions: []action{
-				action{
+				{
 					operation:   "increment_major",
 					incrementBy: 1,
 				},
