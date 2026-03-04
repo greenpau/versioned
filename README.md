@@ -287,6 +287,12 @@ export const Config = {
 };
 ```
 
+The `versioned` reads `VERSION` file and updates `package.json` accordingly:
+
+```bash
+versioned --sync package.json
+```
+
 ### Blender Files
 
 You can automatically sync the version inside a Blender add-on's `bl_info` dictionary with your project's `VERSION` file.
