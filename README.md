@@ -290,7 +290,7 @@ export const Config = {
 The `versioned` reads `VERSION` file and updates `package.json` accordingly:
 
 ```bash
-versioned --sync package.json -format npm-package
+versioned --sync package.json
 ```
 
 ### Blender Files
