@@ -44,7 +44,7 @@ func init() {
 	app.Documentation = "https://github.com/greenpau/versioned/"
 	app.SetVersion(appVersion, "1.0.35")
 	app.SetGitBranch(gitBranch, "")
-	app.SetGitCommit(gitCommit, "")
+	app.SetGitCommit(gitCommit, "1.0.35")
 	app.SetBuildUser(buildUser, "")
 	app.SetBuildDate(buildDate, "")
 }
@@ -62,6 +62,7 @@ func main() {
 	var factor uint64
 	var syncFilePath string
 	var syncFileFormat string
+	var isPreRelease bool
 	var isTocUpdate, isAddLicense, isStripLicense bool
 	var targetFilePath string
 	var licenseCopyrightHolder, licenseType string
@@ -71,6 +72,8 @@ func main() {
 	flag.StringVar(&versionFile, "source", "VERSION", "The \"source of truth\" file with version info")
 	flag.BoolVar(&isInitialize, "init", false, "initialize a new version file")
 	flag.StringVar(&syncFilePath, "sync", "", "synchronize info from version file to `FILE`")
+	flag.BoolVar(&isPreRelease, "prerelease", false, "mark as pre-release for sync purposes")
+
 	flag.StringVar(&syncFileFormat, "format", "", "synchronize according to specific language, i.e. py, js, go, ts, etc.")
 	flag.BoolVar(&isIncrementMajor, "major", false, "increment major version")
 	flag.BoolVar(&isIncrementMinor, "minor", false, "increment minor version")
@@ -270,7 +273,7 @@ func main() {
 			os.Exit(0)
 		}
 		if ext == ".go" {
-			if err := syncGolangFile(pkg, syncFilePath, fi); err != nil {
+			if err := syncGolangFile(pkg, isPreRelease, syncFilePath, fi); err != nil {
 				fmt.Fprintf(os.Stderr, "%s\n", err)
 				os.Exit(1)
 			}
@@ -471,7 +474,7 @@ func syncBlenderFile(pkg *versioned.PackageManager, fp string, fi os.FileInfo) e
 	return nil
 }
 
-func syncGolangFile(pkg *versioned.PackageManager, fp string, _ os.FileInfo) error {
+func syncGolangFile(pkg *versioned.PackageManager, isPreRelease bool, fp string, _ os.FileInfo) error {
 	var buffer bytes.Buffer
 	fh, err := os.Open(fp)
 	if err != nil {
@@ -535,9 +538,17 @@ func syncGolangFile(pkg *versioned.PackageManager, fp string, _ os.FileInfo) err
 							repl = pkg.Git.Branch
 							isRepl = true
 						}
+						if isPreRelease {
+							repl = ""
+							isRepl = true
+						}
 					case "GitCommit":
 						if m[3] != pkg.Git.Commit {
 							repl = pkg.Git.Commit
+							isRepl = true
+						}
+						if isPreRelease {
+							repl = pkg.Version
 							isRepl = true
 						}
 					default:
